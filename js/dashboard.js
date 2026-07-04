@@ -711,11 +711,49 @@ const DashboardPage = (() => {
                 }
             });
         }
+
+        // Header sync button
+        const headerSyncBtn = document.getElementById('dashboard-header-sync-btn');
+        if (headerSyncBtn) {
+            headerSyncBtn.addEventListener('click', async () => {
+                const origText = headerSyncBtn.innerHTML;
+                headerSyncBtn.innerHTML = `
+                    <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    Syncing...
+                `;
+                headerSyncBtn.disabled = true;
+                try {
+                    await Store.syncFromCloud();
+                    if (typeof App !== 'undefined' && App.showToast) {
+                        App.showToast('Database sync complete!', 'success');
+                    }
+                    render(container);
+                } catch (e) {
+                    if (typeof App !== 'undefined' && App.showToast) {
+                        App.showToast('Sync failed: ' + e.message, 'error');
+                    }
+                } finally {
+                    if (headerSyncBtn) {
+                        headerSyncBtn.innerHTML = origText;
+                        headerSyncBtn.disabled = false;
+                    }
+                }
+            });
+        }
     }
 
     // ── Public render() ──────────────────────────────────────────
     function render(container) {
         injectStyles();
+
+        if (typeof App !== 'undefined' && App.setHeaderActions) {
+            App.setHeaderActions(`
+                <button class="btn btn-primary btn-sm" id="dashboard-header-sync-btn" style="display:flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    Sync Database
+                </button>
+            `);
+        }
 
         const monthLabel = Utils.getMonthName(Utils.getCurrentMonthStr());
 
