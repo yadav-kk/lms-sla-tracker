@@ -59,8 +59,7 @@ const App = (() => {
         navigate(initialPage);
 
         // Auto-sync from Supabase Cloud on startup if enabled
-        const settings = Store.getSettings();
-        if (settings.supabaseEnabled && settings.supabaseUrl && settings.supabaseKey) {
+        if (Store.isSupabaseEnabled()) {
             showToast('🔄 Syncing with Supabase Cloud...', 'info');
             Store.syncFromCloud()
                 .then(() => {
