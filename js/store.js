@@ -666,6 +666,26 @@ const Store = (() => {
 
     // ── Seeding ──────────────────────────────────────────────────
     function seed() {
+        const url = (typeof CONFIG !== 'undefined' && CONFIG.supabaseUrl);
+        const key = (typeof CONFIG !== 'undefined' && CONFIG.supabaseKey);
+        const enabled = (typeof CONFIG !== 'undefined' && CONFIG.supabaseEnabled);
+        
+        if (enabled && url && key) {
+            // Initialize empty LocalStorage caches so we don't seed local mock data
+            if (_get(KEYS.ISSUES) === null) _set(KEYS.ISSUES, []);
+            if (_get(KEYS.UPTIME) === null) _set(KEYS.UPTIME, []);
+            if (_get(KEYS.SETTINGS) === null) {
+                const now = new Date();
+                const currentMonth = now.toISOString().slice(0, 7);
+                _set(KEYS.SETTINGS, {
+                    amcMonthlyCharge: 150000,
+                    companyName: 'Acme Academy LMS Support',
+                    reportingMonth: currentMonth
+                });
+            }
+            return;
+        }
+
         if (_get(KEYS.ISSUES) !== null) return; // already initialized or cleared explicitly
 
         const now = new Date();
