@@ -36,8 +36,8 @@ const Store = (() => {
         }
     }
 
-    // Initialize Supabase after a short delay
-    setTimeout(initSupabase, 100);
+    // Initialize Supabase immediately
+    initSupabase();
 
     async function syncFromCloud() {
         if (!supabaseClient) {
@@ -794,6 +794,9 @@ const Store = (() => {
         initSupabase,
         syncFromCloud,
         uploadToCloud,
-        isSupabaseEnabled: () => !!supabaseClient
+        isSupabaseEnabled: () => {
+            if (!supabaseClient) initSupabase();
+            return !!supabaseClient;
+        }
     };
 })();
