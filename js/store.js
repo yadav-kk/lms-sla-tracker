@@ -707,16 +707,39 @@ const Store = (() => {
 
     function getDevTasks() {
         let tasks = _get(KEYS.DEV_TASKS);
+        
+        // Caching migration: if old tasks exist without phase property, invalidate and re-seed
+        if (tasks && tasks.length > 0 && !('phase' in tasks[0])) {
+            tasks = null;
+        }
+
         if (!tasks || tasks.length === 0) {
             // Seed the 60 tasks
             tasks = SEED_DEV_TASKS.map((t, idx) => {
                 const num = idx + 1;
+                let phase = 1;
+                let stage = 1;
+
+                if (num >= 1 && num <= 14) {
+                    phase = 1;
+                    stage = 2; // Stage 2: In Development
+                } else if (num >= 15 && num <= 24) {
+                    phase = 2;
+                } else if (num >= 25 && num <= 34) {
+                    phase = 3;
+                } else if (num >= 35 && num <= 47) {
+                    phase = 4;
+                } else if (num >= 48 && num <= 60) {
+                    phase = 5;
+                }
+
                 return {
                     id: `DEV-${String(num).padStart(4, '0')}`,
                     workType: t.workType,
                     title: t.title,
                     description: t.description,
-                    stage: 1,
+                    phase: phase,
+                    stage: stage,
                     startDate: null,
                     endDate: null,
                     implementationDate: null,
@@ -745,6 +768,7 @@ const Store = (() => {
             workType: data.workType || 'LMS',
             title: data.title || '',
             description: data.description || '',
+            phase: parseInt(data.phase, 10) || 1,
             stage: parseInt(data.stage, 10) || 1,
             startDate: data.startDate || null,
             endDate: data.endDate || null,
@@ -764,6 +788,7 @@ const Store = (() => {
                 work_type: task.workType,
                 title: task.title,
                 description: task.description,
+                phase: task.phase,
                 stage: task.stage,
                 start_date: task.startDate,
                 end_date: task.endDate,
@@ -793,6 +818,7 @@ const Store = (() => {
             if ('workType' in updates) dbUpdates.work_type = updates.workType;
             if ('title' in updates) dbUpdates.title = updates.title;
             if ('description' in updates) dbUpdates.description = updates.description;
+            if ('phase' in updates) dbUpdates.phase = parseInt(updates.phase, 10);
             if ('stage' in updates) dbUpdates.stage = parseInt(updates.stage, 10);
             if ('startDate' in updates) dbUpdates.start_date = updates.startDate;
             if ('endDate' in updates) dbUpdates.end_date = updates.endDate;

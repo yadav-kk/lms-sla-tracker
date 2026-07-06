@@ -5,7 +5,7 @@
 
 const DevTasksPage = (() => {
     let _container = null;
-    let _filters = { stage: 'all', testingStatus: 'all', workType: 'all', search: '', startDate: '', endDate: '', implDate: '' };
+    let _filters = { phase: 'all', stage: 'all', testingStatus: 'all', workType: 'all', search: '', startDate: '', endDate: '', implDate: '' };
     let _sort = { column: 'id', direction: 'asc' };
 
     const STAGE_LABELS = {
@@ -100,7 +100,7 @@ const DevTasksPage = (() => {
         const workTypes = [...new Set(tasks.map(t => t.workType))].sort();
 
         container.innerHTML = `
-            <div class="filters-bar" style="gap: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            <div class="filters-bar" style="gap: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label" style="font-size:0.7rem;">Search</label>
                     <input type="text" class="form-input" id="dev-filter-search" value="${Utils.escapeHTML(_filters.search)}" placeholder="Search task title/desc...">
@@ -110,6 +110,17 @@ const DevTasksPage = (() => {
                     <select class="form-select" id="dev-filter-worktype">
                         <option value="all">All Modules</option>
                         ${workTypes.map(w => `<option value="${Utils.escapeHTML(w)}" ${_filters.workType === w ? 'selected' : ''}>${Utils.escapeHTML(w)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size:0.7rem;">Phase</label>
+                    <select class="form-select" id="dev-filter-phase">
+                        <option value="all">All Phases</option>
+                        <option value="1" ${_filters.phase === '1' ? 'selected' : ''}>Phase 1 (Tasks 1-14)</option>
+                        <option value="2" ${_filters.phase === '2' ? 'selected' : ''}>Phase 2 (Tasks 15-24)</option>
+                        <option value="3" ${_filters.phase === '3' ? 'selected' : ''}>Phase 3 (Tasks 25-34)</option>
+                        <option value="4" ${_filters.phase === '4' ? 'selected' : ''}>Phase 4 (Tasks 35-47)</option>
+                        <option value="5" ${_filters.phase === '5' ? 'selected' : ''}>Phase 5 (Tasks 48-60)</option>
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
@@ -157,6 +168,11 @@ const DevTasksPage = (() => {
             _applyFilters();
         });
 
+        container.querySelector('#dev-filter-phase').addEventListener('change', (e) => {
+            _filters.phase = e.target.value;
+            _applyFilters();
+        });
+
         container.querySelector('#dev-filter-stage').addEventListener('change', (e) => {
             _filters.stage = e.target.value;
             _applyFilters();
@@ -183,7 +199,7 @@ const DevTasksPage = (() => {
         });
 
         container.querySelector('#dev-filter-reset').addEventListener('click', () => {
-            _filters = { stage: 'all', testingStatus: 'all', workType: 'all', search: '', startDate: '', endDate: '', implDate: '' };
+            _filters = { phase: 'all', stage: 'all', testingStatus: 'all', workType: 'all', search: '', startDate: '', endDate: '', implDate: '' };
             _renderFilters(container);
             _applyFilters();
         });
@@ -205,6 +221,11 @@ const DevTasksPage = (() => {
         // 2. Work Type
         if (_filters.workType !== 'all') {
             tasks = tasks.filter(t => t.workType === _filters.workType);
+        }
+
+        // 2.5 Phase
+        if (_filters.phase !== 'all') {
+            tasks = tasks.filter(t => t.phase === parseInt(_filters.phase, 10));
         }
 
         // 3. Stage
@@ -276,6 +297,7 @@ const DevTasksPage = (() => {
         const columns = [
             { key: 'id',                 label: 'ID',           sortable: true },
             { key: 'workType',           label: 'Work Type',    sortable: true },
+            { key: 'phase',              label: 'Phase',        sortable: true },
             { key: 'title',              label: 'Task Title',   sortable: true },
             { key: 'stage',              label: 'Progress Stage',sortable: true },
             { key: 'startDate',          label: 'Start Date',   sortable: true },
@@ -315,6 +337,7 @@ const DevTasksPage = (() => {
                 <tr class="issue-row" data-task-id="${task.id}">
                     <td class="td-id">${Utils.escapeHTML(task.id)}</td>
                     <td class="td-module"><strong>${Utils.escapeHTML(task.workType)}</strong></td>
+                    <td><span class="tag">Phase ${task.phase}</span></td>
                     <td class="td-title" title="${Utils.escapeHTML(task.description || '')}">${Utils.escapeHTML(task.title)}</td>
                     <td>
                         <div class="progress-bar-container" title="Stage ${task.stage}: ${STAGE_LABELS[task.stage]}" style="width: 120px; background: rgba(255,255,255,0.06); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
@@ -377,7 +400,7 @@ const DevTasksPage = (() => {
 
         const data = task || {
             workType: '', title: '', description: '',
-            stage: 1, startDate: '', endDate: '', implementationDate: '',
+            phase: 1, stage: 1, startDate: '', endDate: '', implementationDate: '',
             testingStatus: 'Pending', assignedTo: ''
         };
 
@@ -417,7 +440,17 @@ const DevTasksPage = (() => {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group form-group-third">
+                            <div class="form-group" style="width: 20%; margin-bottom: 0;">
+                                <label class="form-label" for="dev-field-phase">Phase</label>
+                                <select class="form-select" id="dev-field-phase">
+                                    <option value="1" ${data.phase == 1 ? 'selected' : ''}>Phase 1</option>
+                                    <option value="2" ${data.phase == 2 ? 'selected' : ''}>Phase 2</option>
+                                    <option value="3" ${data.phase == 3 ? 'selected' : ''}>Phase 3</option>
+                                    <option value="4" ${data.phase == 4 ? 'selected' : ''}>Phase 4</option>
+                                    <option value="5" ${data.phase == 5 ? 'selected' : ''}>Phase 5</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="width: 25%; margin-bottom: 0;">
                                 <label class="form-label" for="dev-field-stage">Progress Stage</label>
                                 <select class="form-select" id="dev-field-stage">
                                     ${Object.entries(STAGE_LABELS).map(([k, v]) => `
@@ -425,7 +458,7 @@ const DevTasksPage = (() => {
                                     `).join('')}
                                 </select>
                             </div>
-                            <div class="form-group form-group-third">
+                            <div class="form-group" style="width: 25%; margin-bottom: 0;">
                                 <label class="form-label" for="dev-field-status">Testing Status</label>
                                 <select class="form-select" id="dev-field-status">
                                     ${TESTING_STATUSES.map(s => `
@@ -433,7 +466,7 @@ const DevTasksPage = (() => {
                                     `).join('')}
                                 </select>
                             </div>
-                            <div class="form-group form-group-third">
+                            <div class="form-group" style="width: 30%; margin-bottom: 0;">
                                 <label class="form-label" for="dev-field-assigned">Assigned To</label>
                                 <select class="form-select" id="dev-field-assigned">
                                     <option value="">— Unassigned —</option>
@@ -502,6 +535,7 @@ const DevTasksPage = (() => {
                 workType: overlay.querySelector('#dev-field-worktype').value.trim(),
                 title: overlay.querySelector('#dev-field-title').value.trim(),
                 description: overlay.querySelector('#dev-field-desc').value.trim(),
+                phase: parseInt(overlay.querySelector('#dev-field-phase').value, 10),
                 stage: parseInt(overlay.querySelector('#dev-field-stage').value, 10),
                 testingStatus: overlay.querySelector('#dev-field-status').value,
                 assignedTo: overlay.querySelector('#dev-field-assigned').value,
