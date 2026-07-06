@@ -998,12 +998,7 @@ const SLAReferencePage = (() => {
                             <td><a href="mailto:sunilkumarsingh@literacyindia.org" style="color: #6c7bff; text-decoration: none;">sunilkumarsingh@literacyindia.org</a></td>
                             <td>+91 9811820027</td>
                         </tr>
-                        <tr>
-                            <td><strong>OP Meenu</strong></td>
-                            <td>Project Manager</td>
-                            <td><a href="mailto:opmeenu@gmail.com" style="color: #6c7bff; text-decoration: none;">opmeenu@gmail.com</a></td>
-                            <td>+91 9999644218</td>
-                        </tr>
+                        
                     </tbody>
                 </table>
             </div>
@@ -1021,6 +1016,12 @@ const SLAReferencePage = (() => {
                         </tr>
                     </thead>
                     <tbody>
+                            <tr>
+                            <td><strong>Arif</strong></td>
+                            <td>Helpdesk / Resident Engineer</td>
+                            <td><a href="mailto:arifansari@reospark.com" style="color: #6c7bff; text-decoration: none;">arifansari@reospark.com</a></td>
+                            <td>+91 9871264243</td>
+                        </tr>
                         <tr>
                             <td><strong>Pradeep</strong></td>
                             <td>Specialist Engineer</td>
@@ -1034,16 +1035,16 @@ const SLAReferencePage = (() => {
                             <td>+91 9801298785</td>
                         </tr>
                         <tr>
-                            <td><strong>Arif</strong></td>
-                            <td>Helpdesk / Resident Engineer</td>
-                            <td><a href="mailto:arifansari@reospark.com" style="color: #6c7bff; text-decoration: none;">arifansari@reospark.com</a></td>
-                            <td>+91 9871264243</td>
-                        </tr>
-                        <tr>
                             <td><strong>Priyesh Tiwari</strong></td>
                             <td>Project Manager</td>
-                            <td><a href="mailto:opmeenu@gmail.com" style="color: #6c7bff; text-decoration: none;">opmeenu@gmail.com</a></td>
+                            <td><a href="mailto:priyesh.cbtech@gmail.com" style="color: #6c7bff; text-decoration: none;">priyesh.cbtech@gmail.com</a></td>
                             <td>+91 7217766185</td>
+                            <tr>
+                            <td><strong>OP Meenu</strong></td>
+                            <td>Project Manager</td>
+                            <td><a href="mailto:opmeenu@gmail.com" style="color: #6c7bff; text-decoration: none;">opmeenu@gmail.com</a></td>
+                            <td>+91 9999644218</td>
+                        </tr>
                         </tr>
                     </tbody>
                 </table>

@@ -275,7 +275,7 @@ const Store = (() => {
         { level: 1, designation: 'Helpdesk / Resident Engineer', names: ['Arif', 'Harvinder'], emails: ['arifansari@reospark.com', 'harvinder.anan@gmail.com'], phones: ['9871264243', '9801298785'] },
         { level: 2, designation: 'Specialist Engineer', names: ['Pradeep', 'Arif'], emails: ['pradeep@reospark.com'], phones: ['9386292565', '9801298785'] },
         { level: 3, designation: 'LMS Administration', names: ['Krishankant Yadav'], emails: ['krishankant.yadav@literacyindia.org'], phones: ['8743080876'] },
-        { level: 4, designation: 'Project Manager', names: ['OP Meenu', 'Priyesh Tiwari'], emails: ['opmeenu@gmail.com'], phones: ['9999644218', '7217766185'] },
+        { level: 4, designation: 'Project Manager', names: ['OP Meenu', 'Priyesh Tiwari'], emails: ['opmeenu@gmail.com','priyesh.cbtech@gmail.com'], phones: ['9999644218', '7217766185'] },
         { level: 5, designation: 'Project Director', names: ['Sunil Kumar Singh'], emails: ['sunilkumarsingh@literacyindia.org'], phones: ['9811820027'] }
     ];
 
