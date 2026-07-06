@@ -17,7 +17,7 @@ const IssuesPage = (() => {
     let _filters = { priority: 'all', status: 'all', module: 'all', search: '' };
 
     // ── Public render entry point ────────────────────────────────
-    function render(container) {
+    function render(container, params = {}) {
         _container = container;
         _container.innerHTML = '';
 
@@ -66,6 +66,13 @@ const IssuesPage = (() => {
 
         // Render the active view
         _renderCurrentView();
+
+        // Deep-linking support to open specific issue directly
+        if (params.issueId) {
+            setTimeout(() => {
+                openIssueModal(params.issueId);
+            }, 150);
+        }
 
         // ── Event delegation ─────────────────────────────────────
         toolbar.addEventListener('click', (e) => {
@@ -463,11 +470,16 @@ const IssuesPage = (() => {
         // Defaults for a new issue
         const data = issue || {
             title: '', description: '', module: '', systemIssue: '',
+            category: 'Backend Side',
             priority: 'P3', status: 'Open', assignedTo: '',
             startDate: now, targetEndDate: null, actualEndDate: null,
             pausedAt: null, pauseReason: null, totalPausedMinutes: 0,
             attachments: [], notes: [], escalationLevel: 1, slaStatus: 'On Track'
         };
+
+        if (!data.category) {
+            data.category = _detectCategoryFromModule(data.module);
+        }
 
         // Get system issues for the currently selected module
         const moduleIssues = Store.TASK_MATRIX.filter(t => t.module === data.module);
@@ -553,6 +565,15 @@ const IssuesPage = (() => {
                                     ${allNames.map(n =>
                                         `<option value="${Utils.escapeHTML(n)}" ${data.assignedTo === n ? 'selected' : ''}>${Utils.escapeHTML(n)}</option>`
                                     ).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group form-group-half">
+                                <label class="form-label" for="issue-field-category">Issue Category</label>
+                                <select class="form-select" id="issue-field-category">
+                                    <option value="Backend Side" ${data.category === 'Backend Side' ? 'selected' : ''}>Backend Side</option>
+                                    <option value="Content Side" ${data.category === 'Content Side' ? 'selected' : ''}>Content Side</option>
                                 </select>
                             </div>
                         </div>
@@ -646,6 +667,25 @@ const IssuesPage = (() => {
                             </div>
                         </div>` : ''}
 
+                        <!-- Share & Notify Panel -->
+                        <div class="glass-card-static" id="issue-share-panel" style="margin-bottom: 16px;">
+                            <h4 class="panel-heading">📢 Share & Notify</h4>
+                            <div class="form-group ${data.category === 'Content Side' ? '' : 'hidden'}" id="issue-server-guy-wrap" style="margin-bottom: 12px;">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-secondary);">
+                                    <input type="checkbox" id="issue-field-include-server" style="accent-color: var(--accent-primary);">
+                                    Include Server Guy (Devendra Soni)
+                                </label>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <button class="btn btn-secondary btn-sm" id="issue-btn-email" style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;">
+                                    ✉️ Generate Email
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="issue-btn-whatsapp" style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;">
+                                    💬 Send WhatsApp Alert
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Attachments -->
                         <div class="glass-card-static" id="issue-attachments-panel">
                             <h4 class="panel-heading">Attachments</h4>
@@ -716,6 +756,20 @@ const IssuesPage = (() => {
             const matching = Store.TASK_MATRIX.filter(t => t.module === mod);
             sysIssueSelect.innerHTML = `<option value="">— Select System Issue —</option>` +
                 matching.map(t => `<option value="${Utils.escapeHTML(t.issue)}" data-priority="${t.priority}">${Utils.escapeHTML(t.issue)}</option>`).join('');
+
+            const categorySelect = modal.querySelector('#issue-field-category');
+            if (categorySelect) {
+                const detected = _detectCategoryFromModule(mod);
+                categorySelect.value = detected;
+                const serverGuyWrap = modal.querySelector('#issue-server-guy-wrap');
+                if (serverGuyWrap) {
+                    if (detected === 'Content Side') {
+                        serverGuyWrap.classList.remove('hidden');
+                    } else {
+                        serverGuyWrap.classList.add('hidden');
+                    }
+                }
+            }
         });
 
         sysIssueSelect.addEventListener('change', () => {
@@ -740,6 +794,37 @@ const IssuesPage = (() => {
                 grp.classList.add('hidden');
             }
         });
+
+        // ── Category Change Handling ─────────────────────────────
+        const categorySelect = modal.querySelector('#issue-field-category');
+        const serverGuyWrap = modal.querySelector('#issue-server-guy-wrap');
+        if (categorySelect && serverGuyWrap) {
+            categorySelect.addEventListener('change', () => {
+                if (categorySelect.value === 'Content Side') {
+                    serverGuyWrap.classList.remove('hidden');
+                } else {
+                    serverGuyWrap.classList.add('hidden');
+                }
+            });
+        }
+
+        // ── Email Generation ─────────────────────────────────────
+        const emailBtn = modal.querySelector('#issue-btn-email');
+        if (emailBtn) {
+            emailBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                _generateEmailAlert(modal, data);
+            });
+        }
+
+        // ── WhatsApp Generation ──────────────────────────────────
+        const waBtn = modal.querySelector('#issue-btn-whatsapp');
+        if (waBtn) {
+            waBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                _generateWhatsAppAlert(modal, data);
+            });
+        }
 
         // ── Pause / Resume SLA ───────────────────────────────────
         const pauseBtn = modal.querySelector('#issue-btn-pause-toggle');
@@ -1048,6 +1133,7 @@ const IssuesPage = (() => {
             description: modal.querySelector('#issue-field-description').value.trim(),
             module: modal.querySelector('#issue-field-module').value,
             systemIssue: modal.querySelector('#issue-field-system-issue').value,
+            category: modal.querySelector('#issue-field-category').value,
             priority,
             status,
             assignedTo: modal.querySelector('#issue-field-assigned').value,
@@ -1225,6 +1311,115 @@ const IssuesPage = (() => {
                     <div class="timeline-text">${Utils.escapeHTML(note.text)}</div>
                 </div>
             </div>`).join('');
+    }
+
+    function _detectCategoryFromModule(moduleName) {
+        if (!moduleName) return 'Backend Side';
+        const name = moduleName.toLowerCase();
+        if (name.includes('academic') || name.includes('content') || name.includes('certificate') || name.includes('enrollment') || name.includes('scorm')) {
+            return 'Content Side';
+        }
+        return 'Backend Side';
+    }
+
+    function _generateEmailAlert(modal, data) {
+        const id = data.id || 'NEW';
+        const title = modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue';
+        const category = modal.querySelector('#issue-field-category').value;
+        const priority = modal.querySelector('#issue-field-priority').value;
+        const moduleName = modal.querySelector('#issue-field-module').value || 'N/A';
+        const systemIssue = modal.querySelector('#issue-field-system-issue').value || 'N/A';
+        const assignedTo = modal.querySelector('#issue-field-assigned').value || 'Unassigned';
+        const description = modal.querySelector('#issue-field-description').value.trim() || 'No description provided.';
+        
+        const startVal = modal.querySelector('#issue-field-start').value;
+        const targetVal = modal.querySelector('#issue-field-target-end').value;
+        
+        const startDate = startVal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(startVal)) : 'N/A';
+        const targetEndDate = targetVal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(targetVal)) : 'N/A';
+
+        // Recipient mapping
+        let toEmails = [];
+        if (category === 'Backend Side') {
+            toEmails = ['pradeep@reospark.com', 'harvinder.anan@gmail.com', 'opmeenu@gmail.com', 'arifansari@reospark.com'];
+        } else {
+            toEmails = ['opmeenu@gmail.com', 'harvinder.anan@gmail.com'];
+        }
+
+        const includeServer = modal.querySelector('#issue-field-include-server')?.checked;
+        if (includeServer) {
+            toEmails.push('devsoni@hotmail.com');
+        }
+
+        const ccEmails = ['krishankant.yadav@literacyindia.org', 'sunilkumarsingh@literacyindia.org', 'opmeenu@gmail.com'];
+
+        // Build direct link
+        const directLink = window.location.origin + window.location.pathname + '#issues?issueId=' + encodeURIComponent(id);
+
+        const subject = `[LMS SLA TICKET] [${priority}] ${id}: ${title}`;
+        
+        const body = `Hello Team,
+
+A new LMS SLA Issue has been recorded. Please find the details below:
+
+--------------------------------------------------
+Ticket ID      : ${id}
+Category       : ${category}
+Priority       : ${priority}
+Title          : ${title}
+Functional Area: ${moduleName}
+System Issue   : ${systemIssue}
+Assigned To    : ${assignedTo}
+--------------------------------------------------
+Start Date     : ${startDate}
+Target SLA End : ${targetEndDate}
+--------------------------------------------------
+Description    :
+${description}
+
+--------------------------------------------------
+Direct Link & PDF Copy:
+- View & Print PDF: ${directLink}
+- Attachments note : This ticket contains files. Please click the link above to view/download attachments.
+--------------------------------------------------
+
+Regards,
+LMS Operations Desk`;
+
+        const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailtoUrl;
+    }
+
+    function _generateWhatsAppAlert(modal, data) {
+        const id = data.id || 'NEW';
+        const title = modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue';
+        const category = modal.querySelector('#issue-field-category').value;
+        const priority = modal.querySelector('#issue-field-priority').value;
+        const assignedTo = modal.querySelector('#issue-field-assigned').value || 'Unassigned';
+        const status = modal.querySelector('#issue-field-status').value || 'Open';
+        const description = modal.querySelector('#issue-field-description').value.trim() || 'No description provided.';
+        
+        const targetVal = modal.querySelector('#issue-field-target-end').value;
+        const targetEndDate = targetVal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(targetVal)) : 'N/A';
+
+        const directLink = window.location.origin + window.location.pathname + '#issues?issueId=' + encodeURIComponent(id);
+
+        const message = `*LMS SLA Ticket Alert* 🚨
+----------------------------------
+*ID*: ${id}
+*Category*: ${category}
+*Priority*: ${priority}
+*Assigned To*: ${assignedTo}
+*Status*: ${status}
+*Target SLA End*: ${targetEndDate}
+----------------------------------
+*Title*: ${title}
+*Description*: ${description}
+----------------------------------
+*View PDF / Details*: ${directLink}`;
+
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
     }
 
     // ── Public API ───────────────────────────────────────────────

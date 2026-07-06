@@ -56,7 +56,8 @@ const App = (() => {
 
         // Navigate to initial page (from hash or default)
         const initialPage = getPageFromHash() || DEFAULT_PAGE;
-        navigate(initialPage);
+        const params = getParamsFromHash();
+        navigate(initialPage, params);
 
         // Auto-sync from Supabase Cloud on startup if enabled
         if (Store.isSupabaseEnabled()) {
@@ -65,7 +66,7 @@ const App = (() => {
                 .then(() => {
                     showToast('✅ Cloud database sync complete!', 'success');
                     // Refresh current page view
-                    if (currentPage) navigate(currentPage);
+                    if (currentPage) navigate(currentPage, getParamsFromHash());
                 })
                 .catch(err => {
                     console.error("Startup sync error:", err);
@@ -80,20 +81,41 @@ const App = (() => {
        ═══════════════════════════════════════════════════════════════ */
 
     /**
-     * Extract page key from the URL hash.
-     * e.g. '#issues' → 'issues', '#sla-reference' → 'sla-reference'
+     * Extract page key from the URL hash, ignoring query parameters.
+     * e.g. '#issues?issueId=LI-P2-July-011' → 'issues'
      */
     function getPageFromHash() {
-        const hash = window.location.hash.replace('#', '').toLowerCase();
-        return PAGES[hash] ? hash : null;
+        const hash = window.location.hash.replace('#', '').trim();
+        if (!hash) return null;
+        const [pagePart] = hash.split('?');
+        const page = pagePart.toLowerCase();
+        return PAGES[page] ? page : null;
+    }
+
+    /**
+     * Parse query parameters from the URL hash.
+     * e.g. '#issues?issueId=LI-P2-July-011' → { issueId: 'LI-P2-July-011' }
+     */
+    function getParamsFromHash() {
+        const hash = window.location.hash.replace('#', '').trim();
+        const [_, queryPart] = hash.split('?');
+        const params = {};
+        if (queryPart) {
+            queryPart.split('&').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key) {
+                    params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                }
+            });
+        }
+        return params;
     }
 
     /** Handle browser back/forward (hashchange). */
     function handleHashChange() {
         const page = getPageFromHash() || DEFAULT_PAGE;
-        if (page !== currentPage) {
-            navigate(page);
-        }
+        const params = getParamsFromHash();
+        navigate(page, params);
     }
 
     /** Handle sidebar nav link clicks. */
@@ -110,15 +132,22 @@ const App = (() => {
      * Navigate to a page.
      * Updates: hash, sidebar active state, page title, header actions, rendered content.
      */
-    function navigate(page) {
+    function navigate(page, params = {}) {
         const entry = PAGES[page];
         if (!entry) return;
 
         currentPage = page;
 
         // 1. Update hash (silently — avoid re-triggering hashchange)
-        if (window.location.hash !== '#' + page) {
-            history.replaceState(null, '', '#' + page);
+        let hash = '#' + page;
+        if (params && Object.keys(params).length > 0) {
+            const query = Object.entries(params)
+                .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+                .join('&');
+            hash += '?' + query;
+        }
+        if (window.location.hash !== hash) {
+            history.replaceState(null, '', hash);
         }
 
         // 2. Update sidebar active link
@@ -144,7 +173,7 @@ const App = (() => {
         $pageContent.innerHTML = '';  // clear previous
         const mod = entry.module();
         if (mod && typeof mod.render === 'function') {
-            mod.render($pageContent);
+            mod.render($pageContent, params);
         } else {
             $pageContent.innerHTML = `
                 <div class="empty-state animate-fade-in">

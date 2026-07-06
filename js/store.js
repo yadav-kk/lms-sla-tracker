@@ -274,8 +274,9 @@ const Store = (() => {
     const ESCALATION_CONTACTS = [
         { level: 1, designation: 'Helpdesk / Resident Engineer', names: ['Arif', 'Harvinder'], emails: ['arifansari@reospark.com', 'harvinder.anan@gmail.com'], phones: ['9871264243', '9801298785'] },
         { level: 2, designation: 'Specialist Engineer', names: ['Pradeep', 'Arif'], emails: ['pradeep@reospark.com'], phones: ['9386292565', '9801298785'] },
-        { level: 3, designation: 'Project Manager', names: ['Priyesh Tiwari', 'O.P. Arora'], emails: ['opmeenu@gmail.com'], phones: ['9999644218', '7217766185'] },
-        { level: 4, designation: 'Leadership / Delivery Head', names: ['O.P. Arora', 'Priyesh Tiwari'], emails: ['opmeenu@gmail.com'], phones: ['9999644218', '7217766185'] }
+        { level: 3, designation: 'LMS Administration', names: ['Krishankant Yadav'], emails: ['krishankant.yadav@literacyindia.org'], phones: ['8743080876'] },
+        { level: 4, designation: 'Project Manager', names: ['OP Meenu', 'Priyesh Tiwari'], emails: ['opmeenu@gmail.com'], phones: ['9999644218', '7217766185'] },
+        { level: 5, designation: 'Project Director', names: ['Sunil Kumar Singh'], emails: ['sunilkumarsingh@literacyindia.org'], phones: ['9811820027'] }
     ];
 
     // Escalation timelines (minutes)
@@ -283,20 +284,23 @@ const Store = (() => {
         P1: [
             { level: 1, label: 'Helpdesk', afterMinutes: 0 },
             { level: 2, label: 'Specialist Engineer', afterMinutes: 15 },
-            { level: 3, label: 'Project Manager', afterMinutes: 30 },
-            { level: 4, label: 'Leadership', afterMinutes: 60 }
+            { level: 3, label: 'LMS Administration', afterMinutes: 30 },
+            { level: 4, label: 'Project Manager', afterMinutes: 60 },
+            { level: 5, label: 'Project Director', afterMinutes: 120 }
         ],
         P2: [
             { level: 1, label: 'Helpdesk', afterMinutes: 0 },
             { level: 2, label: 'Specialist Engineer', afterMinutes: 60 },
-            { level: 3, label: 'Project Manager', afterMinutes: 240 },
-            { level: 4, label: 'Leadership', afterMinutes: 480 }
+            { level: 3, label: 'LMS Administration', afterMinutes: 240 },
+            { level: 4, label: 'Project Manager', afterMinutes: 480 },
+            { level: 5, label: 'Project Director', afterMinutes: 720 }
         ],
         P3: [
             { level: 1, label: 'Helpdesk', afterMinutes: 0 },
             { level: 2, label: 'Specialist Engineer', afterMinutes: 1440 },  // Day 2
-            { level: 3, label: 'Project Manager', afterMinutes: 5760 },     // Day 4
-            { level: 4, label: 'Leadership', afterMinutes: 7200 }           // Day 5
+            { level: 3, label: 'LMS Administration', afterMinutes: 2880 },   // Day 3
+            { level: 4, label: 'Project Manager', afterMinutes: 5760 },     // Day 4
+            { level: 5, label: 'Project Director', afterMinutes: 7200 }     // Day 5
         ]
     };
 
