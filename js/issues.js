@@ -478,7 +478,7 @@ const IssuesPage = (() => {
         overlay.id = 'issue-modal-overlay';
 
         const slaConfig = Store.SLA_CONFIG[data.priority] || {};
-        const elapsed = Utils.computeElapsedMinutes(data.startDate, data.actualEndDate, data.totalPausedMinutes);
+        const elapsed = Utils.computeElapsedMinutes(data.startDate, data.actualEndDate, data.totalPausedMinutes, data.priority);
         const slaStatus = Utils.computeSLAStatus(data);
         const escLevel = Utils.computeEscalationLevel(data);
         const escContact = Store.ESCALATION_CONTACTS.find(c => c.level === escLevel);
@@ -1107,7 +1107,7 @@ const IssuesPage = (() => {
 
         const slaStatus = Utils.computeSLAStatus(issue);
         const escLevel = Utils.computeEscalationLevel(issue);
-        const elapsed = Utils.computeElapsedMinutes(issue.startDate, issue.actualEndDate, issue.totalPausedMinutes);
+        const elapsed = Utils.computeElapsedMinutes(issue.startDate, issue.actualEndDate, issue.totalPausedMinutes, issue.priority);
         const slaConfig = Store.SLA_CONFIG[issue.priority] || {};
 
         const printContainer = document.createElement('div');

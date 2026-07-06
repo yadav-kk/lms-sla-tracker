@@ -156,13 +156,81 @@ const Utils = (() => {
     }
 
     /**
-     * Calculate elapsed SLA minutes (excluding paused time).
+     * Calculate business elapsed minutes (Mon-Sat, 09:00-18:00 IST).
      */
-    function computeElapsedMinutes(startDateISO, endDateISO, totalPausedMinutes) {
-        if (!startDateISO) return 0;
+    function computeBusinessMinutes(startDateISO, endDateISO) {
         const start = new Date(startDateISO);
         const end = endDateISO ? new Date(endDateISO) : new Date();
-        const elapsed = (end.getTime() - start.getTime()) / 60000;
+        if (start.getTime() >= end.getTime()) return 0;
+
+        let totalMinutes = 0;
+        let current = new Date(start.getTime());
+
+        const IST_OFFSET = 330; // +5:30 in minutes
+
+        while (current.getTime() < end.getTime()) {
+            let adjustedDate = new Date(current.getTime() + IST_OFFSET * 60000);
+            let dayOfWeek = adjustedDate.getDay(); // 0=Sun, 6=Sat
+
+            if (dayOfWeek === 0) {
+                // Sunday — skip to Monday 09:00 IST
+                current = getNextBusinessStart(current, IST_OFFSET);
+                continue;
+            }
+
+            const istNow = adjustedDate.getHours() * 60 + adjustedDate.getMinutes();
+            const bizStart = 9 * 60;  // 09:00
+            const bizEnd = 18 * 60;   // 18:00
+
+            if (istNow < bizStart) {
+                // Before business hours — jump to start of today's business hours
+                const diff = bizStart - istNow;
+                current = new Date(current.getTime() + diff * 60000);
+                continue;
+            }
+
+            if (istNow >= bizEnd) {
+                // After business hours — jump to next business day 09:00
+                current = getNextBusinessStart(current, IST_OFFSET);
+                continue;
+            }
+
+            // Inside business hours — calculate how much time remains today or until end
+            const minutesLeftToday = bizEnd - istNow;
+            const msLeftToday = minutesLeftToday * 60000;
+            const msToEnd = end.getTime() - current.getTime();
+
+            if (msToEnd <= msLeftToday) {
+                totalMinutes += msToEnd / 60000;
+                break;
+            } else {
+                totalMinutes += minutesLeftToday;
+                current = new Date(current.getTime() + msLeftToday);
+                current = getNextBusinessStart(current, IST_OFFSET);
+            }
+        }
+
+        return totalMinutes;
+    }
+
+    /**
+     * Calculate elapsed SLA minutes (excluding paused time).
+     */
+    function computeElapsedMinutes(startDateISO, endDateISO, totalPausedMinutes, priority) {
+        if (!startDateISO) return 0;
+        let elapsed = 0;
+        if (priority === 'P1') {
+            const start = new Date(startDateISO);
+            const end = endDateISO ? new Date(endDateISO) : new Date();
+            elapsed = (end.getTime() - start.getTime()) / 60000;
+        } else if (priority === 'P2' || priority === 'P3') {
+            elapsed = computeBusinessMinutes(startDateISO, endDateISO);
+        } else {
+            // Fallback to straight calendar time for undefined/P4
+            const start = new Date(startDateISO);
+            const end = endDateISO ? new Date(endDateISO) : new Date();
+            elapsed = (end.getTime() - start.getTime()) / 60000;
+        }
         return Math.max(0, elapsed - (totalPausedMinutes || 0));
     }
 
@@ -182,7 +250,7 @@ const Utils = (() => {
         const config = Store.SLA_CONFIG[issue.priority];
         if (!config || !config.resolutionMinutes) return 'On Track';
 
-        const elapsed = computeElapsedMinutes(issue.startDate, null, issue.totalPausedMinutes);
+        const elapsed = computeElapsedMinutes(issue.startDate, null, issue.totalPausedMinutes, issue.priority);
 
         if (elapsed >= config.resolutionMinutes) return 'Breached';
         if (elapsed >= config.resolutionMinutes * 0.75) return 'At Risk';
@@ -199,7 +267,7 @@ const Utils = (() => {
         const timeline = Store.ESCALATION_TIMELINES[issue.priority];
         if (!timeline) return 1;
 
-        const elapsed = computeElapsedMinutes(issue.startDate, null, issue.totalPausedMinutes);
+        const elapsed = computeElapsedMinutes(issue.startDate, null, issue.totalPausedMinutes, issue.priority);
 
         let level = 1;
         for (const step of timeline) {
@@ -220,7 +288,7 @@ const Utils = (() => {
 
         if (['Resolved', 'Closed'].includes(issue.status)) return null;
 
-        const elapsed = computeElapsedMinutes(issue.startDate, null, issue.totalPausedMinutes);
+        const elapsed = computeElapsedMinutes(issue.startDate, null, issue.totalPausedMinutes, issue.priority);
         return config.resolutionMinutes - elapsed;
     }
 
