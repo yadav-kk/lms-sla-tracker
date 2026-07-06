@@ -83,47 +83,49 @@ const Utils = (() => {
     }
 
     /**
+     * Shift UTC Date by +5:30 so that UTC fields return the exact IST representation.
+     * Prevents machine timezone double-offset bugs.
+     */
+    function getISTParts(date) {
+        const shiftDate = new Date(date.getTime() + 330 * 60000);
+        return {
+            year: shiftDate.getUTCFullYear(),
+            month: shiftDate.getUTCMonth(),
+            date: shiftDate.getUTCDate(),
+            day: shiftDate.getUTCDay(), // 0=Sun, 6=Sat
+            hours: shiftDate.getUTCHours(),
+            minutes: shiftDate.getUTCMinutes()
+        };
+    }
+
+    /**
      * Add business minutes (Mon-Sat, 09:00-18:00 IST)
      */
     function addBusinessMinutes(startDate, minutes) {
         let remaining = minutes;
         let current = new Date(startDate.getTime());
 
-        // IST offset is +5:30 = 330 minutes
-        const IST_OFFSET = 330;
-
         while (remaining > 0) {
-            // Get IST time
-            const utcMinutes = current.getUTCHours() * 60 + current.getUTCMinutes();
-            const istMinutes = utcMinutes + IST_OFFSET;
-            const istHour = Math.floor(istMinutes / 60) % 24;
-            const istDay = current.getUTCDay(); // Adjusted below if IST crosses midnight
-
-            // Get IST day of week
-            let adjustedDate = new Date(current.getTime() + IST_OFFSET * 60000);
-            let dayOfWeek = adjustedDate.getDay(); // 0=Sun, 6=Sat
+            const parts = getISTParts(current);
 
             // Sunday = non-business
-            if (dayOfWeek === 0) {
-                // Skip to Monday 09:00 IST
-                current = getNextBusinessStart(current, IST_OFFSET);
+            if (parts.day === 0) {
+                current = getNextBusinessStart(current);
                 continue;
             }
 
-            const istNow = adjustedDate.getHours() * 60 + adjustedDate.getMinutes();
+            const istNow = parts.hours * 60 + parts.minutes;
             const bizStart = 9 * 60;  // 09:00
             const bizEnd = 18 * 60;   // 18:00
 
             if (istNow < bizStart) {
-                // Before business hours — jump to start
                 const diff = bizStart - istNow;
                 current = new Date(current.getTime() + diff * 60000);
                 continue;
             }
 
             if (istNow >= bizEnd) {
-                // After business hours — jump to next business day 09:00
-                current = getNextBusinessStart(current, IST_OFFSET);
+                current = getNextBusinessStart(current);
                 continue;
             }
 
@@ -135,24 +137,24 @@ const Utils = (() => {
             } else {
                 remaining -= minutesLeftToday;
                 current = new Date(current.getTime() + minutesLeftToday * 60000);
-                current = getNextBusinessStart(current, IST_OFFSET);
+                current = getNextBusinessStart(current);
             }
         }
 
         return current;
     }
 
-    function getNextBusinessStart(date, istOffset) {
-        let d = new Date(date.getTime() + istOffset * 60000);
+    function getNextBusinessStart(date) {
+        const d = new Date(date.getTime() + 330 * 60000);
         // Move to next day
-        d.setDate(d.getDate() + 1);
-        d.setHours(9, 0, 0, 0);
+        d.setUTCDate(d.getUTCDate() + 1);
+        d.setUTCHours(9, 0, 0, 0);
         // Skip Sunday
-        while (d.getDay() === 0) {
-            d.setDate(d.getDate() + 1);
+        while (d.getUTCDay() === 0) {
+            d.setUTCDate(d.getUTCDate() + 1);
         }
         // Convert back to UTC
-        return new Date(d.getTime() - istOffset * 60000);
+        return new Date(d.getTime() - 330 * 60000);
     }
 
     /**
@@ -166,36 +168,29 @@ const Utils = (() => {
         let totalMinutes = 0;
         let current = new Date(start.getTime());
 
-        const IST_OFFSET = 330; // +5:30 in minutes
-
         while (current.getTime() < end.getTime()) {
-            let adjustedDate = new Date(current.getTime() + IST_OFFSET * 60000);
-            let dayOfWeek = adjustedDate.getDay(); // 0=Sun, 6=Sat
+            const parts = getISTParts(current);
 
-            if (dayOfWeek === 0) {
-                // Sunday — skip to Monday 09:00 IST
-                current = getNextBusinessStart(current, IST_OFFSET);
+            if (parts.day === 0) {
+                current = getNextBusinessStart(current);
                 continue;
             }
 
-            const istNow = adjustedDate.getHours() * 60 + adjustedDate.getMinutes();
+            const istNow = parts.hours * 60 + parts.minutes;
             const bizStart = 9 * 60;  // 09:00
             const bizEnd = 18 * 60;   // 18:00
 
             if (istNow < bizStart) {
-                // Before business hours — jump to start of today's business hours
                 const diff = bizStart - istNow;
                 current = new Date(current.getTime() + diff * 60000);
                 continue;
             }
 
             if (istNow >= bizEnd) {
-                // After business hours — jump to next business day 09:00
-                current = getNextBusinessStart(current, IST_OFFSET);
+                current = getNextBusinessStart(current);
                 continue;
             }
 
-            // Inside business hours — calculate how much time remains today or until end
             const minutesLeftToday = bizEnd - istNow;
             const msLeftToday = minutesLeftToday * 60000;
             const msToEnd = end.getTime() - current.getTime();
@@ -206,7 +201,7 @@ const Utils = (() => {
             } else {
                 totalMinutes += minutesLeftToday;
                 current = new Date(current.getTime() + msLeftToday);
-                current = getNextBusinessStart(current, IST_OFFSET);
+                current = getNextBusinessStart(current);
             }
         }
 
