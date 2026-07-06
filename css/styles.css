@@ -2239,3 +2239,97 @@ ul, ol {
     background: rgba(0, 0, 0, 0.05) !important;
     color: var(--text-primary) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEW MODE TABS & PRIORITY CHIPS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Segmented Control / Tabs for View Modes */
+.issues-view-tabs {
+    display: flex;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    gap: 2px;
+}
+
+.view-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+}
+
+.view-tab:hover {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.view-tab.active {
+    background: var(--accent-gradient);
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Priority Chips */
+#issues-priority-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chip {
+    padding: 6px 14px;
+    border-radius: var(--radius-xl);
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.chip:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.chip.active {
+    background: var(--accent-gradient);
+    color: #fff !important;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+}
+
+/* Color specific overrides for active priority chips */
+.chip.chip-p1.active {
+    background: linear-gradient(135deg, #ff4757, #ff6b81) !important;
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4) !important;
+}
+.chip.chip-p2.active {
+    background: linear-gradient(135deg, #ffa502, #ff7f50) !important;
+    box-shadow: 0 2px 8px rgba(255, 165, 2, 0.4) !important;
+}
+.chip.chip-p3.active {
+    background: linear-gradient(135deg, #3742fa, #70a1ff) !important;
+    box-shadow: 0 2px 8px rgba(55, 66, 250, 0.4) !important;
+}
+.chip.chip-p4.active {
+    background: linear-gradient(135deg, #747d8c, #a4b0be) !important;
+    box-shadow: 0 2px 8px rgba(116, 125, 140, 0.4) !important;
+}
