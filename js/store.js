@@ -120,13 +120,14 @@ const Store = (() => {
                 });
                 _set(KEYS.COUNTERS, counters);
             }
-            if (devTasks) {
+            if (devTasks && devTasks.length > 0) {
                 // Map database underscore properties to local store camelCase
                 const mappedTasks = devTasks.map(t => ({
                     id: t.id,
                     workType: t.work_type,
                     title: t.title,
                     description: t.description,
+                    phase: t.phase || 1,
                     stage: t.stage,
                     startDate: t.start_date,
                     endDate: t.end_date,
@@ -147,6 +148,16 @@ const Store = (() => {
                     }
                 });
                 _set(KEYS.COUNTERS, counters);
+            } else if (devTasks && devTasks.length === 0) {
+                // The cloud table is empty, let's upload our seeded/modified local tasks!
+                const localTasks = getDevTasks();
+                if (localTasks.length > 0) {
+                    console.log("Cloud dev_tasks table is empty. Auto-uploading local tasks to cloud...");
+                    // Run async upload in background
+                    uploadToCloud().catch(err => {
+                        console.error("Auto-uploading dev_tasks to Supabase failed:", err);
+                    });
+                }
             }
             if (settingsArr && settingsArr.length > 0) {
                 const s = settingsArr[0];
