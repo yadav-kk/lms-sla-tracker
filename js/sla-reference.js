@@ -779,9 +779,9 @@ const SLAReferencePage = (() => {
 
         // Escalation timelines — horizontal bar visualizations
         const timelineData = {
-            P1: { labels: ['0m', '15m', '30m', '60m'], color: '#ff4757' },
-            P2: { labels: ['0m', '60m', '4h', '8h'], color: '#ffa502' },
-            P3: { labels: ['Day 1', 'Day 2', 'Day 4', 'Day 5'], color: '#3742fa' }
+            P1: { labels: ['0m', '15m', '30m', '60m', '120m'], color: '#ff4757' },
+            P2: { labels: ['0m', '60m', '4h', '8h', '12h'], color: '#ffa502' },
+            P3: { labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'], color: '#3742fa' }
         };
 
         let timelinesHtml = '';
