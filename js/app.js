@@ -18,6 +18,7 @@ const App = (() => {
     const PAGES = {
         'dashboard':     { title: 'Dashboard',     module: () => typeof DashboardPage     !== 'undefined' ? DashboardPage     : null },
         'issues':        { title: 'Issues',         module: () => typeof IssuesPage        !== 'undefined' ? IssuesPage        : null },
+        'dev-tasks':     { title: 'Dev Tasks',      module: () => typeof DevTasksPage      !== 'undefined' ? DevTasksPage      : null },
         'uptime':        { title: 'Uptime',         module: () => typeof UptimePage        !== 'undefined' ? UptimePage        : null },
         'sla-reference': { title: 'SLA Reference',  module: () => typeof SLAReferencePage  !== 'undefined' ? SLAReferencePage  : null },
         'settings':      { title: 'Settings',       module: () => ({ render: renderSettingsPage }) }

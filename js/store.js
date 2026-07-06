@@ -8,7 +8,8 @@ const Store = (() => {
         ISSUES: 'lms_sla_issues',
         UPTIME: 'lms_sla_uptime',
         SETTINGS: 'lms_sla_settings',
-        COUNTERS: 'lms_sla_counters'
+        COUNTERS: 'lms_sla_counters',
+        DEV_TASKS: 'lms_sla_dev_tasks'
     };
 
     // ── Supabase Integration ─────────────────────────────────────
@@ -67,6 +68,18 @@ const Store = (() => {
                 .eq('id', 1);
             if (settingsErr) throw settingsErr;
 
+            // Fetch dev tasks gracefully (in case table doesn't exist yet)
+            let devTasks = null;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('dev_tasks')
+                    .select('*');
+                if (error) throw error;
+                devTasks = data;
+            } catch (e) {
+                console.warn("Could not sync dev_tasks from Supabase (table might not exist yet):", e);
+            }
+
             // Save to LocalStorage cache
             if (issues) {
                 _set(KEYS.ISSUES, issues);
@@ -103,6 +116,34 @@ const Store = (() => {
                     const count = parseInt(l.id.replace('UT-', ''), 10);
                     if (!isNaN(count) && (!counters['UT'] || count > counters['UT'])) {
                         counters['UT'] = count;
+                    }
+                });
+                _set(KEYS.COUNTERS, counters);
+            }
+            if (devTasks) {
+                // Map database underscore properties to local store camelCase
+                const mappedTasks = devTasks.map(t => ({
+                    id: t.id,
+                    workType: t.work_type,
+                    title: t.title,
+                    description: t.description,
+                    stage: t.stage,
+                    startDate: t.start_date,
+                    endDate: t.end_date,
+                    implementationDate: t.implementation_date,
+                    testingStatus: t.testing_status,
+                    assignedTo: t.assigned_to || '',
+                    createdAt: t.created_at,
+                    updatedAt: t.updated_at
+                }));
+                _set(KEYS.DEV_TASKS, mappedTasks);
+                
+                // Sync DEV counter
+                const counters = _get(KEYS.COUNTERS) || {};
+                devTasks.forEach(t => {
+                    const count = parseInt(t.id.replace('DEV-', ''), 10);
+                    if (!isNaN(count) && (!counters['DEV'] || count > counters['DEV'])) {
+                        counters['DEV'] = count;
                     }
                 });
                 _set(KEYS.COUNTERS, counters);
@@ -193,6 +234,32 @@ const Store = (() => {
                     .from('uptime_logs')
                     .upsert(logsToInsert);
                 if (uptErr) throw uptErr;
+            }
+
+            // 4. Push dev tasks (graceful error handling if table is not created yet)
+            const devTasks = getDevTasks();
+            if (devTasks.length > 0) {
+                const tasksToInsert = devTasks.map(t => ({
+                    id: t.id,
+                    work_type: t.workType,
+                    title: t.title,
+                    description: t.description,
+                    stage: t.stage,
+                    start_date: t.startDate || null,
+                    end_date: t.endDate || null,
+                    implementation_date: t.implementationDate || null,
+                    testing_status: t.testingStatus || 'Pending',
+                    assigned_to: t.assignedTo || null,
+                    updated_at: t.updatedAt || new Date().toISOString()
+                }));
+                try {
+                    const { error } = await supabaseClient
+                        .from('dev_tasks')
+                        .upsert(tasksToInsert);
+                    if (error) throw error;
+                } catch (e) {
+                    console.warn("Could not upload dev_tasks to Supabase (table might not exist yet):", e);
+                }
             }
 
             console.log("Successfully uploaded local data to Supabase Cloud Database!");
@@ -574,6 +641,185 @@ const Store = (() => {
         }
     }
 
+    // ── Development Tasks CRUD ───────────────────────────────────
+    const SEED_DEV_TASKS = [
+        { workType: 'Teacher Profile', title: 'Add Filter on Teacher Module', description: 'Implement filter functionality in the teacher module and generate filtered reports.' },
+        { workType: 'Teacher Profile', title: 'Assigned Syllabus', description: 'Allow extraction of syllabus in Excel or PDF format (as per given template).' },
+        { workType: 'Teacher Profile', title: 'Assigned Syllabus', description: 'Add a trigger to reassign topics to students.' },
+        { workType: 'Teacher Profile', title: 'Batch Change Functionality', description: 'Currently, once a batch is assigned to a student, it cannot be changed. The new approach should allow teachers (and users with student creation/upgradation rights) to update the batch of any student.' },
+        { workType: 'Teacher Profile', title: 'Granular Content Flow & Subject Control', description: 'To provide a flexible enrolment system that defaults to the standard Gyantantra Pedology for mass student onboarding while allowing teachers to customize Content Flow (Pedology vs. Freeflow) and Subject Availability for individual students' },
+        { workType: 'Teacher Profile', title: 'Question Paper Download', description: 'Update the time and size of test paper downlad. Currently the size of paper is so long.' },
+        { workType: 'Teacher Profile', title: 'Question Paper Download', description: 'A Button which can download the filled paper.' },
+        { workType: 'Teacher Profile', title: 'Syllabus Report Module Update', description: 'Add filter functionality so that data is displayed based on selected criteria.' },
+        { workType: 'Teacher Profile', title: 'Syllabus Report Module Update', description: 'Columns are currently static, suitable only for Classes 3–5. For other classes where major subjects differ, dynamic column handling is required.' },
+        { workType: 'Teacher Profile', title: 'Test List Module UI', description: 'Add columns for revision, exam completion date, and results (Passed/Needs Revision). Status buttons should use color coding (Red = Pending, Green = Approved).' },
+        { workType: 'Teacher Profile', title: 'Test List Module UI', description: 'Update offline paper download process so a button is visible when offline papers are available.' },
+        { workType: 'Teacher Profile', title: 'Test List Module UI', description: 'Enable export of test lists to Excel for basic analysis.' },
+        { workType: 'Teacher Profile', title: 'Test List Module UI', description: 'Add time tracking to display total duration taken by a user to complete tests (including pre-tests).' },
+        { workType: 'Teacher Profile', title: 'Test List Module UI', description: 'Track all assessments completed by a student.' },
+        { workType: 'LMS', title: 'Grade card and Certificate verify module', description: 'On Login page there is a module attached to verify certificate and download grade card. (login us done using certificate no. Username, Email Id.' },
+        { workType: 'Student', title: 'Completion Animation', description: 'An Completion animation after pass the post Test.' },
+        { workType: 'Student', title: 'Grade Card', description: 'A Student can download his/her grade card even between the course progress.' },
+        { workType: 'Student', title: 'Pre‑Test Date on Dashboard', description: 'Pre‑Test date displayed on Student Dashboard, set as Date of Admission' },
+        { workType: 'Student', title: 'Term & Condition Page', description: 'A New UI for Term and condition for all user.' },
+        { workType: 'Teacher Profile', title: 'Grade Card', description: 'Display only the subjects aligned with the selected student.' },
+        { workType: 'Teacher Profile', title: 'Restructuring of Seen/Unseen', description: 'Move this module from the dashboard to the service section with full functionality.' },
+        { workType: 'Teacher Profile', title: 'Restructuring of Seen/Unseen', description: 'Display only the main topic (e.g., one topic with 10 slides should appear as a single entry). Provide a dropdown to view the full menu.' },
+        { workType: 'Teacher Profile', title: 'Restructuring of Seen/Unseen', description: 'Add an approval button for teachers to review progress and reassign topics to students.' },
+        { workType: 'LMS', title: 'SMTP Configuration', description: 'Configure SMTP for LMS.' },
+        { workType: 'Admin / Super Admin', title: 'Master module', description: 'Master for Subject Icons' },
+        { workType: 'Admin / Super Admin', title: 'Organization', description: 'User Control for Admin of various Orgnization' },
+        { workType: 'Admin / Super Admin', title: 'Organization', description: 'User Control for all the user.' },
+        { workType: 'Admin / Super Admin', title: 'Master Module – Content Management', description: 'For Content Admin' },
+        { workType: 'LMS', title: 'Specific module for Assignment', description: 'A specific module on LMS is only for assesments, mean for this there is no need for any content to be completed for tests.' },
+        { workType: 'Coordinator', title: 'LMS UI', description: 'Add dynamic centre filter (multiple choice).' },
+        { workType: 'Coordinator', title: 'Assigned Syllabus', description: 'Provide a specific module for coordinators and higher users to complete topics for any aligned student.' },
+        { workType: 'Coordinator', title: 'Excel Report', description: 'Coordinators can download reports for multiple centres.' },
+        { workType: 'Coordinator', title: 'LMS Module', description: 'Coordinators have access to all modules aligned to teacher IDs.' },
+        { workType: 'Coordinator', title: 'Restructuring of Seen/Unseen', description: 'Coordinators can approve and review work done by teachers.' },
+        { workType: 'Director & Trustees', title: 'LMS UI', description: 'Add dynamic filters for Centre & Coordinator (multiple choice).' },
+        { workType: 'Director & Trustees', title: 'Assigned Syllabus', description: 'Provide a specific module for managers and higher users to complete topics for any aligned student.' },
+        { workType: 'Director & Trustees', title: 'Excel Report', description: 'Managers can download reports for multiple centres (Including Partner)' },
+        { workType: 'Director & Trustees', title: 'LMS Module', description: 'Managers have access to all modules aligned to teacher & Co-ordinator IDs.' },
+        { workType: 'Director & Trustees', title: 'Restructuring of Seen/Unseen', description: 'Managers can approve and review work done by teachers & Co-ordinator.' },
+        { workType: 'Director & Trustees', title: 'User Deletion Rights', description: 'Managers can add or delete any user lower in hierarchy (e.g., Students).' },
+        { workType: 'GyanTantra APK', title: 'Offline Login System', description: 'The LMS allows multiple students to continue their learning progress offline' },
+        { workType: 'Manager', title: 'LMS UI', description: 'Add dynamic filters for Centre & Coordinator (multiple choice).' },
+        { workType: 'Manager', title: 'Assigned Syllabus', description: 'Provide a specific module for managers and higher users to complete topics for any aligned student.' },
+        { workType: 'Manager', title: 'Excel Report', description: 'Managers can download reports for multiple centres.' },
+        { workType: 'Manager', title: 'LMS Module', description: 'Managers have access to all modules aligned to teacher & Co-ordinator IDs.' },
+        { workType: 'Manager', title: 'Restructuring of Seen/Unseen', description: 'Managers can approve and review work done by teachers & Co-ordinator.' },
+        { workType: 'Manager', title: 'User Deletion Rights', description: 'Managers can add or delete any user lower in hierarchy (e.g., Students).' },
+        { workType: 'Manager', title: 'Dashboard', description: 'Create a dedicated dashboard for Managers.' },
+        { workType: 'Teacher Profile', title: 'Dashboard', description: 'Create a dedicated dashboard for Teacher' },
+        { workType: 'Coordinator', title: 'Dashboard', description: 'Create a dedicated dashboard for Coordinators.' },
+        { workType: 'Director & Trustees', title: 'Dashboard', description: 'Create a dedicated dashboard for Managers.' },
+        { workType: 'Admin / Super Admin', title: 'Master Module – Terms & Conditions', description: 'Master module for Terms & Conditions' },
+        { workType: 'Admin / Super Admin', title: 'Master Module – Organization Management', description: 'Master module for Organization' },
+        { workType: 'Admin / Super Admin', title: 'Master Module – Contact Us', description: 'Module for managing “Contact Us”' },
+        { workType: 'Admin / Super Admin', title: 'All Access of LMS', description: 'Admins must have complete access to the LMS within their organization, with the ability to perform all CRUD (Create, Read, Update, Delete) operations on any module or content.' },
+        { workType: 'LMS', title: 'Analytics Dashboard', description: 'Provide visual dashboards with exportable reports.' },
+        { workType: 'LMS', title: 'Liaison Members – New UI', description: 'Develop a complete UI for all management users including Director, Trustee, Manager, Faculty, Coordinator, and others.' },
+        { workType: 'LMS', title: 'Profile', description: 'Update profile module for all the user.' },
+        { workType: 'LMS', title: 'Notification & Alerts System', description: 'Integrate email/SMS/in-app notifications for events like test completion, syllabus updates, or pending approvals.' },
+        { workType: 'LMS', title: 'Two‑Way Integration – Literacy India BMS', description: 'Integration between GyanTantra LMS and Literacy India Website, for enrollment & Marks Transfer & Alumini Section.' }
+    ];
+
+    function getDevTasks() {
+        let tasks = _get(KEYS.DEV_TASKS);
+        if (!tasks || tasks.length === 0) {
+            // Seed the 60 tasks
+            tasks = SEED_DEV_TASKS.map((t, idx) => {
+                const num = idx + 1;
+                return {
+                    id: `DEV-${String(num).padStart(4, '0')}`,
+                    workType: t.workType,
+                    title: t.title,
+                    description: t.description,
+                    stage: 1,
+                    startDate: null,
+                    endDate: null,
+                    implementationDate: null,
+                    testingStatus: 'Pending',
+                    assignedTo: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+            });
+            _set(KEYS.DEV_TASKS, tasks);
+            
+            // Set DEV counter
+            const counters = _get(KEYS.COUNTERS) || {};
+            counters['DEV'] = tasks.length;
+            _set(KEYS.COUNTERS, counters);
+        }
+        return tasks;
+    }
+
+    function createDevTask(data) {
+        const tasks = getDevTasks();
+        const now = new Date().toISOString();
+        const id = _nextId('DEV');
+        const task = {
+            id,
+            workType: data.workType || 'LMS',
+            title: data.title || '',
+            description: data.description || '',
+            stage: parseInt(data.stage, 10) || 1,
+            startDate: data.startDate || null,
+            endDate: data.endDate || null,
+            implementationDate: data.implementationDate || null,
+            testingStatus: data.testingStatus || 'Pending',
+            assignedTo: data.assignedTo || '',
+            createdAt: now,
+            updatedAt: now
+        };
+        tasks.push(task);
+        _set(KEYS.DEV_TASKS, tasks);
+
+        // Supabase Background Sync
+        if (supabaseClient) {
+            supabaseClient.from('dev_tasks').insert([{
+                id: task.id,
+                work_type: task.workType,
+                title: task.title,
+                description: task.description,
+                stage: task.stage,
+                start_date: task.startDate,
+                end_date: task.endDate,
+                implementation_date: task.implementationDate,
+                testing_status: task.testingStatus,
+                assigned_to: task.assignedTo || null
+            }]).then(({ error }) => {
+                if (error) console.error("Supabase createDevTask background sync error:", error);
+            });
+        }
+
+        return task;
+    }
+
+    function updateDevTask(id, updates) {
+        const tasks = getDevTasks();
+        const idx = tasks.findIndex(t => t.id === id);
+        if (idx === -1) return null;
+        
+        const now = new Date().toISOString();
+        tasks[idx] = { ...tasks[idx], ...updates, updatedAt: now };
+        _set(KEYS.DEV_TASKS, tasks);
+
+        // Supabase Background Sync
+        if (supabaseClient) {
+            const dbUpdates = { updated_at: now };
+            if ('workType' in updates) dbUpdates.work_type = updates.workType;
+            if ('title' in updates) dbUpdates.title = updates.title;
+            if ('description' in updates) dbUpdates.description = updates.description;
+            if ('stage' in updates) dbUpdates.stage = parseInt(updates.stage, 10);
+            if ('startDate' in updates) dbUpdates.start_date = updates.startDate;
+            if ('endDate' in updates) dbUpdates.end_date = updates.endDate;
+            if ('implementationDate' in updates) dbUpdates.implementation_date = updates.implementationDate;
+            if ('testingStatus' in updates) dbUpdates.testing_status = updates.testingStatus;
+            if ('assignedTo' in updates) dbUpdates.assigned_to = updates.assignedTo || null;
+
+            supabaseClient.from('dev_tasks').update(dbUpdates).eq('id', id).then(({ error }) => {
+                if (error) console.error("Supabase updateDevTask background sync error:", error);
+            });
+        }
+
+        return tasks[idx];
+    }
+
+    function deleteDevTask(id) {
+        const tasks = getDevTasks().filter(t => t.id !== id);
+        _set(KEYS.DEV_TASKS, tasks);
+
+        // Supabase Background Sync
+        if (supabaseClient) {
+            supabaseClient.from('dev_tasks').delete().eq('id', id).then(({ error }) => {
+                if (error) console.error("Supabase deleteDevTask background sync error:", error);
+            });
+        }
+    }
+
     // ── Settings ─────────────────────────────────────────────────
     function getSettings() {
         return _get(KEYS.SETTINGS) || {
@@ -776,6 +1022,12 @@ const Store = (() => {
         createUptimeLog,
         updateUptimeLog,
         deleteUptimeLog,
+
+        // Dev Tasks
+        getDevTasks,
+        createDevTask,
+        updateDevTask,
+        deleteDevTask,
 
         // Settings
         getSettings,
