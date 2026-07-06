@@ -972,13 +972,122 @@ const SLAReferencePage = (() => {
         return perfCard + backupCard + serviceCard + maintCard;
     }
 
+    // ── TAB 6: Support Contacts ─────────────────────────────────
+    function _renderSupportContacts() {
+        const clientHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Resource Name</th>
+                            <th>Designation / Role</th>
+                            <th>Email Address</th>
+                            <th>Mobile Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Krishankant Yadav</strong></td>
+                            <td>LMS Administration</td>
+                            <td><a href="mailto:krishankant.yadav@literacyindia.org" style="color: #6c7bff; text-decoration: none;">krishankant.yadav@literacyindia.org</a></td>
+                            <td>+91 8743080876</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sunil Kumar Singh</strong></td>
+                            <td>Project Director</td>
+                            <td><a href="mailto:sunilkumarsingh@literacyindia.org" style="color: #6c7bff; text-decoration: none;">sunilkumarsingh@literacyindia.org</a></td>
+                            <td>+91 9811820027</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OP Meenu</strong></td>
+                            <td>Project Manager</td>
+                            <td><a href="mailto:opmeenu@gmail.com" style="color: #6c7bff; text-decoration: none;">opmeenu@gmail.com</a></td>
+                            <td>+91 9999644218</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        const backendHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Resource Name</th>
+                            <th>Designation / Role</th>
+                            <th>Email Address</th>
+                            <th>Mobile Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Pradeep</strong></td>
+                            <td>Specialist Engineer</td>
+                            <td><a href="mailto:pradeep@reospark.com" style="color: #6c7bff; text-decoration: none;">pradeep@reospark.com</a></td>
+                            <td>+91 9386292565</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Harvinder</strong></td>
+                            <td>Resident Engineer</td>
+                            <td><a href="mailto:harvinder.anan@gmail.com" style="color: #6c7bff; text-decoration: none;">harvinder.anan@gmail.com</a></td>
+                            <td>+91 9801298785</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Arif</strong></td>
+                            <td>Helpdesk / Resident Engineer</td>
+                            <td><a href="mailto:arifansari@reospark.com" style="color: #6c7bff; text-decoration: none;">arifansari@reospark.com</a></td>
+                            <td>+91 9871264243</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Priyesh Tiwari</strong></td>
+                            <td>Project Manager</td>
+                            <td><a href="mailto:opmeenu@gmail.com" style="color: #6c7bff; text-decoration: none;">opmeenu@gmail.com</a></td>
+                            <td>+91 7217766185</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        const serverHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Resource Name</th>
+                            <th>Designation / Role</th>
+                            <th>Email Address</th>
+                            <th>Mobile Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Devendra Soni</strong></td>
+                            <td>Server Guy / Infrastructure</td>
+                            <td><a href="mailto:devsoni@hotmail.com" style="color: #6c7bff; text-decoration: none;">devsoni@hotmail.com</a></td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        const cardClient = _card('<span class="sla-ref-icon">🏢</span> Client & Administration Team', clientHtml);
+        const cardBackend = _card('<span class="sla-ref-icon">💻</span> Backend Development Team', backendHtml);
+        const cardServer = _card('<span class="sla-ref-icon">🌐</span> Infrastructure & Server Side Support', serverHtml);
+
+        return cardClient + cardBackend + cardServer;
+    }
+
     // ── Tab definitions ─────────────────────────────────────────
     const TABS = [
         { id: 'sla-standards',        label: 'SLA Standards',         icon: '📐', renderer: _renderSLAStandards },
         { id: 'penalties',            label: 'Penalties',             icon: '💰', renderer: _renderPenalties },
         { id: 'task-classification',  label: 'Task Classification',   icon: '🗂️', renderer: _renderTaskClassification },
         { id: 'escalation',          label: 'Escalation',            icon: '📈', renderer: _renderEscalation },
-        { id: 'engineering-baselines', label: 'Engineering Baselines', icon: '⚙️', renderer: _renderEngineeringBaselines }
+        { id: 'engineering-baselines', label: 'Engineering Baselines', icon: '⚙️', renderer: _renderEngineeringBaselines },
+        { id: 'support-contacts',      label: 'Support Contacts',      icon: '👥', renderer: _renderSupportContacts }
     ];
 
     // ── Main render ─────────────────────────────────────────────

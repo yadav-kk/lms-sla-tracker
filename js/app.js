@@ -255,6 +255,8 @@ const App = (() => {
         toast._dismissed = true;
         clearTimeout(toast._timer);
         toast.classList.add('toast-removing');
+        // Safety fallback: remove from DOM after 400ms even if animationend event doesn't fire
+        setTimeout(() => toast.remove(), 400);
         toast.addEventListener('animationend', () => toast.remove());
     }
 
