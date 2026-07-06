@@ -265,7 +265,8 @@ const IssuesPage = (() => {
             { key: 'startDate',     label: 'Start Date',   sortable: true },
             { key: 'targetEndDate', label: 'Target End',   sortable: true },
             { key: 'slaStatus',     label: 'SLA Status',   sortable: true },
-            { key: 'attachments',   label: '📎',           sortable: false }
+            { key: 'attachments',   label: '📎',           sortable: false },
+            { key: 'share',         label: 'Share',        sortable: false }
         ];
 
         // Build sort arrow helper
@@ -303,6 +304,10 @@ const IssuesPage = (() => {
                     <td class="td-date">${Utils.formatDate(issue.targetEndDate)}</td>
                     <td><span class="badge ${slaClass} ${slaPulse}">${slaIcon} ${slaStatus}</span></td>
                     <td class="td-center">${attachCount > 0 ? `📎 ${attachCount}` : '—'}</td>
+                    <td class="td-center" style="white-space: nowrap;">
+                        <button class="row-action-btn btn-email-row" data-issue-id="${issue.id}" title="Generate Email" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 2px 6px; transition: transform var(--transition-fast) ease;">✉️</button>
+                        <button class="row-action-btn btn-whatsapp-row" data-issue-id="${issue.id}" title="Send WhatsApp Alert" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 2px 6px; transition: transform var(--transition-fast) ease;">💬</button>
+                    </td>
                 </tr>`;
         });
 
@@ -326,11 +331,29 @@ const IssuesPage = (() => {
             });
         });
 
-        // Row click → open modal
+        // Row click → open modal (skip if clicking row action buttons)
         table.querySelectorAll('.issue-row').forEach(row => {
-            row.addEventListener('click', () => {
+            row.addEventListener('click', (e) => {
+                if (e.target.closest('.row-action-btn')) return;
                 openIssueModal(row.dataset.issueId);
             });
+        });
+
+        // Click handler for row action buttons
+        table.addEventListener('click', (e) => {
+            const emailBtn = e.target.closest('.btn-email-row');
+            const waBtn = e.target.closest('.btn-whatsapp-row');
+            if (emailBtn) {
+                e.preventDefault();
+                const issueId = emailBtn.dataset.issueId;
+                const issue = Store.getIssueById(issueId);
+                if (issue) _generateEmailAlert(null, issue);
+            } else if (waBtn) {
+                e.preventDefault();
+                const issueId = waBtn.dataset.issueId;
+                const issue = Store.getIssueById(issueId);
+                if (issue) _generateWhatsAppAlert(null, issue);
+            }
         });
     }
 
@@ -628,19 +651,6 @@ const IssuesPage = (() => {
                                     <span class="sla-info-label">Contact</span>
                                     <span class="sla-info-value">${Utils.escapeHTML(escContact.names.join(', '))}</span>
                                 </div>` : ''}
-                            </div>
-                        </div>
-
-                        <!-- Notify Resolver Panel -->
-                        <div class="glass-card-static" id="issue-notify-panel" style="margin-top:16px;">
-                            <h4 class="panel-heading">Notify Resolver</h4>
-                            <div class="notify-controls flex-col gap-sm" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
-                                <button class="btn btn-secondary btn-sm" id="issue-btn-notify-email" style="width:100%; text-align:left; display:flex; align-items:center; gap:8px;">
-                                    ✉️ Email Resolver
-                                </button>
-                                <button class="btn btn-secondary btn-sm" id="issue-btn-notify-whatsapp" style="width:100%; text-align:left; display:flex; align-items:center; gap:8px;">
-                                    💬 WhatsApp Resolver
-                                </button>
                             </div>
                         </div>
 
@@ -983,105 +993,6 @@ const IssuesPage = (() => {
             printBtn.addEventListener('click', () => _printSingleIssue(issueId));
         }
 
-        // ── Notify Resolver ──────────────────────────────────────
-        const notifyEmailBtn = modal.querySelector('#issue-btn-notify-email');
-        const notifyWhatsappBtn = modal.querySelector('#issue-btn-notify-whatsapp');
-        
-        const getResolverContact = () => {
-            const assigneeSelect = modal.querySelector('#issue-field-assigned');
-            const name = assigneeSelect ? assigneeSelect.value : '';
-            if (!name) return null;
-
-            let phone = '';
-            let email = '';
-            let designation = '';
-            for (const c of Store.ESCALATION_CONTACTS) {
-                const idx = c.names.indexOf(name);
-                if (idx !== -1) {
-                    designation = c.designation;
-                    if (!phone && c.phones[idx]) phone = c.phones[idx];
-                    if (!email && c.emails[idx]) email = c.emails[idx];
-                }
-            }
-            // Fallbacks matching contact matrix
-            if (!email || !phone) {
-                if (name === 'Arif') { email = 'arifansari@reospark.com'; phone = '9871264243'; }
-                else if (name === 'Harvinder') { email = 'harvinder.anan@gmail.com'; phone = '9801298785'; }
-                else if (name === 'Pradeep') { email = 'pradeep@reospark.com'; phone = '9386292565'; }
-                else if (name === 'Priyesh Tiwari') { email = 'opmeenu@gmail.com'; phone = '9999644218'; }
-                else if (name === 'O.P. Arora') { email = 'opmeenu@gmail.com'; phone = '7217766185'; }
-            }
-            return { name, designation, email, phone };
-        };
-
-        const getIssueNotifyDetails = () => {
-            const title = modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue';
-            const priority = modal.querySelector('#issue-field-priority').value;
-            const status = modal.querySelector('#issue-field-status').value;
-            const module = modal.querySelector('#issue-field-module').value;
-            const id = isEdit ? issueId : 'NEW TICKET';
-            const desc = modal.querySelector('#issue-field-desc').value.trim() || 'No description provided';
-            
-            const startVal = modal.querySelector('#issue-field-start').value;
-            const startISO = Utils.fromLocalInputDateTime(startVal);
-            const targetISO = Utils.computeTargetEndDate(startISO, priority);
-            const targetFormatted = targetISO ? Utils.formatDateTime(targetISO) : 'N/A';
-            
-            return { id, title, priority, status, module, desc, targetFormatted };
-        };
-
-        if (notifyEmailBtn) {
-            notifyEmailBtn.addEventListener('click', () => {
-                const contact = getResolverContact();
-                if (!contact || !contact.email) {
-                    App.showToast('Please assign a resolver first', 'warning');
-                    return;
-                }
-                const issue = getIssueNotifyDetails();
-                
-                const subject = `[LMS SLA ALERT] Ticket ${issue.id} Assigned - ${issue.priority}`;
-                const body = `LMS SLA ALERT\r\n\r\n` +
-                             `Ticket ID: ${issue.id}\r\n` +
-                             `Priority: ${issue.priority}\r\n` +
-                             `Status: ${issue.status}\r\n` +
-                             `Module: ${issue.module}\r\n` +
-                             `Issue: ${issue.title}\r\n` +
-                             `Description: ${issue.desc}\r\n\r\n` +
-                             `SLA Targets:\r\n` +
-                             `- Target End Date: ${issue.targetFormatted}\r\n\r\n` +
-                             `This is an automated notification. Please log in to resolve.`;
-                             
-                window.location.href = `mailto:${contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                App.showToast('Email client opened', 'success');
-            });
-        }
-
-        if (notifyWhatsappBtn) {
-            notifyWhatsappBtn.addEventListener('click', () => {
-                const contact = getResolverContact();
-                if (!contact || !contact.phone) {
-                    App.showToast('Please assign a resolver first', 'warning');
-                    return;
-                }
-                const issue = getIssueNotifyDetails();
-                
-                const text = `*LMS SLA ALERT* 🚨\r\n` +
-                             `-------------------------\r\n` +
-                             `*Ticket ID*: ${issue.id}\r\n` +
-                             `*Priority*: ${issue.priority}\r\n` +
-                             `*Status*: ${issue.status}\r\n` +
-                             `*Module*: ${issue.module}\r\n` +
-                             `*Issue*: ${issue.title}\r\n\r\n` +
-                             `*SLA Target End*: ${issue.targetFormatted}\r\n\r\n` +
-                             `Please check the portal.`;
-                             
-                const cleanPhone = contact.phone.replace(/\D/g, '');
-                const url = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(text)}`;
-                window.open(url, '_blank');
-                App.showToast('WhatsApp redirect opened', 'success');
-            });
-        }
-
         // ── Save Issue ───────────────────────────────────────────
         modal.querySelector('#issue-btn-save').addEventListener('click', () => {
             _saveIssue(modal, isEdit, issueId, overlay);
@@ -1324,19 +1235,19 @@ const IssuesPage = (() => {
 
     function _generateEmailAlert(modal, data) {
         const id = data.id || 'NEW';
-        const title = modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue';
-        const category = modal.querySelector('#issue-field-category').value;
-        const priority = modal.querySelector('#issue-field-priority').value;
-        const moduleName = modal.querySelector('#issue-field-module').value || 'N/A';
-        const systemIssue = modal.querySelector('#issue-field-system-issue').value || 'N/A';
-        const assignedTo = modal.querySelector('#issue-field-assigned').value || 'Unassigned';
-        const description = modal.querySelector('#issue-field-description').value.trim() || 'No description provided.';
+        const title = modal ? (modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue') : (data.title || 'Untitled Issue');
+        const category = modal ? modal.querySelector('#issue-field-category').value : (data.category || _detectCategoryFromModule(data.module));
+        const priority = modal ? modal.querySelector('#issue-field-priority').value : (data.priority || 'P3');
+        const moduleName = modal ? (modal.querySelector('#issue-field-module').value || 'N/A') : (data.module || 'N/A');
+        const systemIssue = modal ? (modal.querySelector('#issue-field-system-issue').value || 'N/A') : (data.systemIssue || 'N/A');
+        const assignedTo = modal ? (modal.querySelector('#issue-field-assigned').value || 'Unassigned') : (data.assignedTo || 'Unassigned');
+        const description = modal ? (modal.querySelector('#issue-field-description').value.trim() || 'No description provided.') : (data.description || 'No description provided.');
         
-        const startVal = modal.querySelector('#issue-field-start').value;
-        const targetVal = modal.querySelector('#issue-field-target-end').value;
+        const startVal = modal ? modal.querySelector('#issue-field-start').value : data.startDate;
+        const targetVal = modal ? modal.querySelector('#issue-field-target-end').value : data.targetEndDate;
         
-        const startDate = startVal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(startVal)) : 'N/A';
-        const targetEndDate = targetVal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(targetVal)) : 'N/A';
+        const startDate = startVal ? (modal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(startVal)) : Utils.formatDateTime(startVal)) : 'N/A';
+        const targetEndDate = targetVal ? (modal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(targetVal)) : Utils.formatDateTime(targetVal)) : 'N/A';
 
         // Recipient mapping
         let toEmails = [];
@@ -1346,7 +1257,7 @@ const IssuesPage = (() => {
             toEmails = ['opmeenu@gmail.com', 'harvinder.anan@gmail.com'];
         }
 
-        const includeServer = modal.querySelector('#issue-field-include-server')?.checked;
+        const includeServer = modal ? modal.querySelector('#issue-field-include-server')?.checked : false;
         if (includeServer) {
             toEmails.push('devsoni@hotmail.com');
         }
@@ -1392,15 +1303,15 @@ LMS Operations Desk`;
 
     function _generateWhatsAppAlert(modal, data) {
         const id = data.id || 'NEW';
-        const title = modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue';
-        const category = modal.querySelector('#issue-field-category').value;
-        const priority = modal.querySelector('#issue-field-priority').value;
-        const assignedTo = modal.querySelector('#issue-field-assigned').value || 'Unassigned';
-        const status = modal.querySelector('#issue-field-status').value || 'Open';
-        const description = modal.querySelector('#issue-field-description').value.trim() || 'No description provided.';
+        const title = modal ? (modal.querySelector('#issue-field-title').value.trim() || 'Untitled Issue') : (data.title || 'Untitled Issue');
+        const category = modal ? modal.querySelector('#issue-field-category').value : (data.category || _detectCategoryFromModule(data.module));
+        const priority = modal ? modal.querySelector('#issue-field-priority').value : (data.priority || 'P3');
+        const assignedTo = modal ? (modal.querySelector('#issue-field-assigned').value || 'Unassigned') : (data.assignedTo || 'Unassigned');
+        const status = modal ? (modal.querySelector('#issue-field-status').value || 'Open') : (data.status || 'Open');
+        const description = modal ? (modal.querySelector('#issue-field-description').value.trim() || 'No description provided.') : (data.description || 'No description provided.');
         
-        const targetVal = modal.querySelector('#issue-field-target-end').value;
-        const targetEndDate = targetVal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(targetVal)) : 'N/A';
+        const targetVal = modal ? modal.querySelector('#issue-field-target-end').value : data.targetEndDate;
+        const targetEndDate = targetVal ? (modal ? Utils.formatDateTime(Utils.fromLocalInputDateTime(targetVal)) : Utils.formatDateTime(targetVal)) : 'N/A';
 
         const directLink = window.location.origin + window.location.pathname + '#issues?issueId=' + encodeURIComponent(id);
 
