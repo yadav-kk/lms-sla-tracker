@@ -408,7 +408,9 @@ const DevTasksPage = (() => {
         const allAssignees = [];
         Store.ESCALATION_CONTACTS.forEach(c => {
             c.names.forEach(n => {
-                if (!allAssignees.includes(n)) allAssignees.push(n);
+                if (n !== 'Krishankant Yadav' && n !== 'Sunil Kumar Singh') {
+                    if (!allAssignees.includes(n)) allAssignees.push(n);
+                }
             });
         });
 

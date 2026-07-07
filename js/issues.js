@@ -14,7 +14,7 @@ const IssuesPage = (() => {
     let _container = null;
     let _viewMode = 'table';   // 'table' | 'board'
     let _sort = { column: 'startDate', direction: 'desc' };
-    let _filters = { priority: 'all', status: 'all', module: 'all', search: '' };
+    let _filters = { priority: 'all', status: 'all', module: 'all', search: '', category: 'all' };
 
     // ── Public render entry point ────────────────────────────────
     function render(container, params = {}) {
@@ -130,6 +130,12 @@ const IssuesPage = (() => {
                 <button class="chip chip-p3 ${_filters.priority === 'P3' ? 'active' : ''}" data-priority="P3">P3</button>
                 <button class="chip chip-p4 ${_filters.priority === 'P4' ? 'active' : ''}" data-priority="P4">P4</button>
             </div>
+            <div class="filter-group filter-chips" id="issues-category-chips">
+                <label class="filter-label">Category</label>
+                <button class="chip ${_filters.category === 'all' ? 'active' : ''}" data-category="all">All</button>
+                <button class="chip ${_filters.category === 'Backend Side' ? 'active' : ''}" data-category="Backend Side">Backend Type</button>
+                <button class="chip ${_filters.category === 'Content Side' ? 'active' : ''}" data-category="Content Side">Content Type</button>
+            </div>
             <div class="filter-group">
                 <label class="filter-label" for="issues-filter-status">Status</label>
                 <select class="form-select form-select-sm" id="issues-filter-status">
@@ -156,9 +162,14 @@ const IssuesPage = (() => {
 
         // Bind filter events
         container.addEventListener('click', (e) => {
-            const chip = e.target.closest('.chip[data-priority]');
-            if (chip) {
-                _filters.priority = chip.dataset.priority;
+            const pChip = e.target.closest('.chip[data-priority]');
+            if (pChip) {
+                _filters.priority = pChip.dataset.priority;
+                _refreshFiltersAndView();
+            }
+            const cChip = e.target.closest('.chip[data-category]');
+            if (cChip) {
+                _filters.category = cChip.dataset.category;
                 _refreshFiltersAndView();
             }
         });
@@ -182,8 +193,12 @@ const IssuesPage = (() => {
 
     /** Re-render filter chips active states and the current view */
     function _refreshFiltersAndView() {
-        const chips = document.querySelectorAll('#issues-priority-chips .chip');
-        chips.forEach(c => c.classList.toggle('active', c.dataset.priority === _filters.priority));
+        const pChips = document.querySelectorAll('#issues-priority-chips .chip');
+        pChips.forEach(c => c.classList.toggle('active', c.dataset.priority === _filters.priority));
+        
+        const cChips = document.querySelectorAll('#issues-category-chips .chip');
+        cChips.forEach(c => c.classList.toggle('active', c.dataset.category === _filters.category));
+        
         _renderCurrentView();
     }
 
@@ -194,6 +209,10 @@ const IssuesPage = (() => {
         // Priority filter
         if (_filters.priority !== 'all') {
             issues = issues.filter(i => i.priority === _filters.priority);
+        }
+        // Category filter
+        if (_filters.category !== 'all') {
+            issues = issues.filter(i => i.category === _filters.category);
         }
         // Status filter
         if (_filters.status !== 'all') {
@@ -1169,7 +1188,11 @@ const IssuesPage = (() => {
     function _getAllAssigneeNames() {
         const nameSet = new Set();
         Store.ESCALATION_CONTACTS.forEach(c => {
-            (c.names || []).forEach(n => nameSet.add(n));
+            (c.names || []).forEach(n => {
+                if (n !== 'Krishankant Yadav' && n !== 'Sunil Kumar Singh') {
+                    nameSet.add(n);
+                }
+            });
         });
         return Array.from(nameSet).sort();
     }
@@ -1252,7 +1275,7 @@ const IssuesPage = (() => {
         // Recipient mapping
         let toEmails = [];
         if (category === 'Backend Side') {
-            toEmails = ['pradeep@reospark.com', 'harvinder.anan@gmail.com', 'opmeenu@gmail.com', 'arifansari@reospark.com'];
+            toEmails = ['pradeep@reospark.com', 'harvinder.anan@gmail.com', 'arifansari@reospark.com'];
         } else {
             toEmails = ['opmeenu@gmail.com', 'harvinder.anan@gmail.com'];
         }
@@ -1262,7 +1285,8 @@ const IssuesPage = (() => {
             toEmails.push('devsoni@hotmail.com');
         }
 
-        const ccEmails = ['krishankant.yadav@literacyindia.org', 'sunilkumarsingh@literacyindia.org', 'opmeenu@gmail.com'];
+        const rawCc = ['krishankant.yadav@literacyindia.org', 'sunilkumarsingh@literacyindia.org', 'opmeenu@gmail.com', 'priyesh.cbtech@gmail.com'];
+        const ccEmails = rawCc.filter(e => !toEmails.includes(e));
 
         // Build direct link
         const directLink = window.location.origin + window.location.pathname + '#issues?issueId=' + encodeURIComponent(id);
