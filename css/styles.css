@@ -163,31 +163,8 @@ ul, ol {
     border-bottom: 1px solid var(--border-glass);
 }
 
-.sidebar-logo {
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 8px rgba(108, 92, 231, 0.5));
-}
-
-.sidebar-brand-text {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-}
-
-.sidebar-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.sidebar-subtitle {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 400;
-    letter-spacing: 0.02em;
+.sidebar-brand a:hover img {
+    transform: scale(1.04);
 }
 
 /* ── Navigation ──────────────────────────────────────────────────── */
