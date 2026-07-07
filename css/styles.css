@@ -2231,7 +2231,7 @@ ul, ol {
     gap: 2px;
 }
 
-.view-tab {
+.view-tab, .cat-tab {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2247,12 +2247,12 @@ ul, ol {
     font-family: inherit;
 }
 
-.view-tab:hover {
+.view-tab:hover, .cat-tab:hover {
     color: var(--text-primary);
     background: rgba(0, 0, 0, 0.03);
 }
 
-.view-tab.active {
+.view-tab.active, .cat-tab.active {
     background: var(--accent-gradient);
     color: #fff !important;
     font-weight: 600;

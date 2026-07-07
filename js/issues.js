@@ -48,6 +48,14 @@ const IssuesPage = (() => {
                 <button class="btn btn-primary" id="issues-btn-new">＋ New Issue</button>
                 <button class="btn btn-secondary" id="issues-btn-export">📥 Export Excel</button>
                 <button class="btn btn-secondary" id="issues-btn-print">🖨️ Print</button>
+                
+                <span style="height: 24px; width: 1px; background: var(--border-glass); margin: 0 8px; display: inline-block; vertical-align: middle;"></span>
+                
+                <div class="issues-view-tabs" id="issues-category-tabs" style="display: inline-flex;">
+                    <button class="cat-tab ${_filters.category === 'all' ? 'active' : ''}" data-category="all">All Types</button>
+                    <button class="cat-tab ${_filters.category === 'Backend Side' ? 'active' : ''}" data-category="Backend Side">Backend Side</button>
+                    <button class="cat-tab ${_filters.category === 'Content Side' ? 'active' : ''}" data-category="Content Side">Content Side</button>
+                </div>
             </div>`;
         _container.appendChild(toolbar);
 
@@ -82,6 +90,20 @@ const IssuesPage = (() => {
                 _viewMode = tab.dataset.view;
                 toolbar.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
+                _renderCurrentView();
+                return;
+            }
+            // Category tabs
+            const catTab = e.target.closest('.cat-tab');
+            if (catTab) {
+                _filters.category = catTab.dataset.category;
+                toolbar.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+                catTab.classList.add('active');
+                
+                // Keep the filter chips in sync (if they exist)
+                const cChips = document.querySelectorAll('#issues-category-chips .chip');
+                cChips.forEach(c => c.classList.toggle('active', c.dataset.category === _filters.category));
+                
                 _renderCurrentView();
                 return;
             }
@@ -130,12 +152,6 @@ const IssuesPage = (() => {
                 <button class="chip chip-p3 ${_filters.priority === 'P3' ? 'active' : ''}" data-priority="P3">P3</button>
                 <button class="chip chip-p4 ${_filters.priority === 'P4' ? 'active' : ''}" data-priority="P4">P4</button>
             </div>
-            <div class="filter-group filter-chips" id="issues-category-chips">
-                <label class="filter-label">Category</label>
-                <button class="chip ${_filters.category === 'all' ? 'active' : ''}" data-category="all">All</button>
-                <button class="chip ${_filters.category === 'Backend Side' ? 'active' : ''}" data-category="Backend Side">Backend Type</button>
-                <button class="chip ${_filters.category === 'Content Side' ? 'active' : ''}" data-category="Content Side">Content Type</button>
-            </div>
             <div class="filter-group">
                 <label class="filter-label" for="issues-filter-status">Status</label>
                 <select class="form-select form-select-sm" id="issues-filter-status">
@@ -167,11 +183,6 @@ const IssuesPage = (() => {
                 _filters.priority = pChip.dataset.priority;
                 _refreshFiltersAndView();
             }
-            const cChip = e.target.closest('.chip[data-category]');
-            if (cChip) {
-                _filters.category = cChip.dataset.category;
-                _refreshFiltersAndView();
-            }
         });
 
         container.querySelector('#issues-filter-status').addEventListener('change', (e) => {
@@ -196,8 +207,8 @@ const IssuesPage = (() => {
         const pChips = document.querySelectorAll('#issues-priority-chips .chip');
         pChips.forEach(c => c.classList.toggle('active', c.dataset.priority === _filters.priority));
         
-        const cChips = document.querySelectorAll('#issues-category-chips .chip');
-        cChips.forEach(c => c.classList.toggle('active', c.dataset.category === _filters.category));
+        const catTabs = document.querySelectorAll('#issues-category-tabs .cat-tab');
+        catTabs.forEach(t => t.classList.toggle('active', t.dataset.category === _filters.category));
         
         _renderCurrentView();
     }

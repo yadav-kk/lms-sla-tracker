@@ -209,6 +209,7 @@ const Store = (() => {
                     id: i.id,
                     title: i.title,
                     desc: i.description,
+                    category: i.category || 'Backend Side',
                     module: i.module,
                     systemIssue: i.systemIssue,
                     priority: i.priority,
@@ -444,6 +445,7 @@ const Store = (() => {
             id: data.id || generatedId,
             title: data.title || '',
             description: data.description || '',
+            category: data.category || 'Backend Side',
             priority: priority,
             status: data.status || 'Open',
             module: data.module || '',
@@ -473,6 +475,7 @@ const Store = (() => {
                 id: issue.id,
                 title: issue.title,
                 desc: issue.description,
+                category: issue.category,
                 module: issue.module,
                 systemIssue: issue.systemIssue,
                 priority: issue.priority,
@@ -507,6 +510,7 @@ const Store = (() => {
             const dbUpdates = {};
             if ('title' in updates) dbUpdates.title = updates.title;
             if ('description' in updates) dbUpdates.desc = updates.description;
+            if ('category' in updates) dbUpdates.category = updates.category;
             if ('module' in updates) dbUpdates.module = updates.module;
             if ('systemIssue' in updates) dbUpdates.systemIssue = updates.systemIssue;
             if ('priority' in updates) dbUpdates.priority = updates.priority;
