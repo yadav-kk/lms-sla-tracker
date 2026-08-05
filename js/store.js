@@ -82,7 +82,27 @@ const Store = (() => {
 
             // Save to LocalStorage cache
             if (issues) {
-                _set(KEYS.ISSUES, issues);
+                const mappedIssues = issues.map(i => ({
+                    id: i.id,
+                    title: i.title,
+                    description: i.desc, // Map database 'desc' back to local 'description'
+                    category: i.category || 'Backend Side',
+                    module: i.module,
+                    systemIssue: i.systemIssue,
+                    priority: i.priority,
+                    status: i.status,
+                    assignedTo: i.assignedTo,
+                    startDate: i.startDate,
+                    targetEndDate: i.targetEndDate,
+                    actualEndDate: i.actualEndDate,
+                    totalPausedMinutes: i.totalPausedMinutes,
+                    pausedAt: i.pausedAt,
+                    pauseReason: i.pauseReason,
+                    attachments: i.attachments || [],
+                    notes: i.notes || []
+                }));
+                _set(KEYS.ISSUES, mappedIssues);
+
                 // Sync issues counter based on loaded IDs
                 const counters = _get(KEYS.COUNTERS) || {};
                 issues.forEach(i => {
@@ -256,6 +276,7 @@ const Store = (() => {
                     work_type: t.workType,
                     title: t.title,
                     description: t.description,
+                    phase: t.phase || 1,
                     stage: t.stage,
                     start_date: t.startDate || null,
                     end_date: t.endDate || null,

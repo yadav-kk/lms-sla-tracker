@@ -44,17 +44,20 @@ const IssuesPage = (() => {
                     <span class="view-tab-icon">▦</span> Board View
                 </button>
             </div>
-            <div class="issues-actions">
+            <div class="issues-actions" style="display: flex; align-items: center; gap: 8px;">
                 <button class="btn btn-primary" id="issues-btn-new">＋ New Issue</button>
                 <button class="btn btn-secondary" id="issues-btn-export">📥 Export Excel</button>
                 <button class="btn btn-secondary" id="issues-btn-print">🖨️ Print</button>
                 
-                <span style="height: 24px; width: 1px; background: var(--border-glass); margin: 0 8px; display: inline-block; vertical-align: middle;"></span>
+                <span style="height: 24px; width: 1px; background: var(--border-glass); margin: 0 4px;"></span>
                 
-                <div class="issues-view-tabs" id="issues-category-tabs" style="display: inline-flex;">
-                    <button class="cat-tab ${_filters.category === 'all' ? 'active' : ''}" data-category="all">All Types</button>
-                    <button class="cat-tab ${_filters.category === 'Backend Side' ? 'active' : ''}" data-category="Backend Side">Backend Side</button>
-                    <button class="cat-tab ${_filters.category === 'Content Side' ? 'active' : ''}" data-category="Content Side">Content Side</button>
+                <div style="display: flex; flex-direction: column; text-align: left; gap: 2px;">
+                    <label class="form-label" for="issues-toolbar-category" style="font-size: 0.65rem; margin-bottom: 0; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary);">Issue Category</label>
+                    <select class="form-select" id="issues-toolbar-category" style="width: 160px; height: 36px; padding: 6px 36px 6px 12px; font-size: 0.85rem; background-color: #0d1333;">
+                        <option value="all" ${_filters.category === 'all' ? 'selected' : ''}>All Categories</option>
+                        <option value="Backend Side" ${_filters.category === 'Backend Side' ? 'selected' : ''}>Backend Side</option>
+                        <option value="Content Side" ${_filters.category === 'Content Side' ? 'selected' : ''}>Content Side</option>
+                    </select>
                 </div>
             </div>`;
         _container.appendChild(toolbar);
@@ -93,20 +96,6 @@ const IssuesPage = (() => {
                 _renderCurrentView();
                 return;
             }
-            // Category tabs
-            const catTab = e.target.closest('.cat-tab');
-            if (catTab) {
-                _filters.category = catTab.dataset.category;
-                toolbar.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-                catTab.classList.add('active');
-                
-                // Keep the filter chips in sync (if they exist)
-                const cChips = document.querySelectorAll('#issues-category-chips .chip');
-                cChips.forEach(c => c.classList.toggle('active', c.dataset.category === _filters.category));
-                
-                _renderCurrentView();
-                return;
-            }
             // Action buttons
             if (e.target.closest('#issues-btn-new')) { openIssueModal(null); return; }
             if (e.target.closest('#issues-btn-export')) {
@@ -118,6 +107,13 @@ const IssuesPage = (() => {
                 return;
             }
             if (e.target.closest('#issues-btn-print')) { window.print(); }
+        });
+
+        toolbar.addEventListener('change', (e) => {
+            if (e.target.id === 'issues-toolbar-category') {
+                _filters.category = e.target.value;
+                _renderCurrentView();
+            }
         });
     }
 
@@ -207,8 +203,10 @@ const IssuesPage = (() => {
         const pChips = document.querySelectorAll('#issues-priority-chips .chip');
         pChips.forEach(c => c.classList.toggle('active', c.dataset.priority === _filters.priority));
         
-        const catTabs = document.querySelectorAll('#issues-category-tabs .cat-tab');
-        catTabs.forEach(t => t.classList.toggle('active', t.dataset.category === _filters.category));
+        const catSelect = document.getElementById('issues-toolbar-category');
+        if (catSelect) {
+            catSelect.value = _filters.category;
+        }
         
         _renderCurrentView();
     }
