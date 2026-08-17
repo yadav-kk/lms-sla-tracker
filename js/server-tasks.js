@@ -604,6 +604,7 @@ Server Operations Desk`;
 
             window.Email.send({
                 Host: smtpHost || 'smtp.gmail.com',
+                Port: smtpPort || 587,
                 Username: smtpUsername,
                 Password: smtpPassword,
                 To: toEmail,
