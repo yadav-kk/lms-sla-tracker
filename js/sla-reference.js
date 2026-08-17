@@ -976,6 +976,10 @@ const SLAReferencePage = (() => {
 
     // ── TAB 6: Support Contacts ─────────────────────────────────
     function _renderSupportContacts() {
+        const users = Store.getUsers() || [];
+
+        // 1. Client Team (team = 'client' or team = 'management')
+        const clientUsers = users.filter(u => u.team === 'client' || u.team === 'management');
         const clientHtml = `
             <div class="sla-ref-table-wrap">
                 <table class="sla-ref-table">
@@ -988,24 +992,21 @@ const SLAReferencePage = (() => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><strong>Krishankant Yadav</strong></td>
-                            <td>LMS Administration</td>
-                            <td><a href="mailto:krishankant.yadav@literacyindia.org" style="color: #6c7bff; text-decoration: none;">krishankant.yadav@literacyindia.org</a></td>
-                            <td>+91 8743080876</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Sunil Kumar Singh</strong></td>
-                            <td>Project Director</td>
-                            <td><a href="mailto:sunilkumarsingh@literacyindia.org" style="color: #6c7bff; text-decoration: none;">sunilkumarsingh@literacyindia.org</a></td>
-                            <td>+91 9811820027</td>
-                        </tr>
-                        
+                        ${clientUsers.map(u => `
+                            <tr>
+                                <td><strong>${Utils.escapeHTML(u.name)}</strong></td>
+                                <td>${Utils.escapeHTML(u.designation)}</td>
+                                <td><a href="mailto:${Utils.escapeHTML(u.email)}" style="color: #6c7bff; text-decoration: none;">${Utils.escapeHTML(u.email)}</a></td>
+                                <td>${u.phone ? `+91 ${Utils.escapeHTML(u.phone)}` : '—'}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             </div>
         `;
 
+        // 2. Backend Team (team = 'support')
+        const backendUsers = users.filter(u => u.team === 'support');
         const backendHtml = `
             <div class="sla-ref-table-wrap">
                 <table class="sla-ref-table">
@@ -1018,41 +1019,21 @@ const SLAReferencePage = (() => {
                         </tr>
                     </thead>
                     <tbody>
+                        ${backendUsers.map(u => `
                             <tr>
-                            <td><strong>Arif</strong></td>
-                            <td>Helpdesk / Resident Engineer</td>
-                            <td><a href="mailto:arifansari@reospark.com" style="color: #6c7bff; text-decoration: none;">arifansari@reospark.com</a></td>
-                            <td>+91 9871264243</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Pradeep</strong></td>
-                            <td>Specialist Engineer</td>
-                            <td><a href="mailto:pradeep@reospark.com" style="color: #6c7bff; text-decoration: none;">pradeep@reospark.com</a></td>
-                            <td>+91 9386292565</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Harvinder</strong></td>
-                            <td>Resident Engineer</td>
-                            <td><a href="mailto:harvinder.anan@gmail.com" style="color: #6c7bff; text-decoration: none;">harvinder.anan@gmail.com</a></td>
-                            <td>+91 9801298785</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Priyesh Tiwari</strong></td>
-                            <td>Project Manager</td>
-                            <td><a href="mailto:priyesh.cbtech@gmail.com" style="color: #6c7bff; text-decoration: none;">priyesh.cbtech@gmail.com</a></td>
-                            <td>+91 7217766185</td>
-                            <tr>
-                            <td><strong>OP Meenu</strong></td>
-                            <td>Project Manager</td>
-                            <td><a href="mailto:opmeenu@gmail.com" style="color: #6c7bff; text-decoration: none;">opmeenu@gmail.com</a></td>
-                            <td>+91 9999644218</td>
-                        </tr>
-                        </tr>
+                                <td><strong>${Utils.escapeHTML(u.name)}</strong></td>
+                                <td>${Utils.escapeHTML(u.designation)}</td>
+                                <td><a href="mailto:${Utils.escapeHTML(u.email)}" style="color: #6c7bff; text-decoration: none;">${Utils.escapeHTML(u.email)}</a></td>
+                                <td>${u.phone ? `+91 ${Utils.escapeHTML(u.phone)}` : '—'}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             </div>
         `;
 
+        // 3. Server Team (team = 'server')
+        const serverUsers = users.filter(u => u.team === 'server');
         const serverHtml = `
             <div class="sla-ref-table-wrap">
                 <table class="sla-ref-table">
@@ -1065,12 +1046,14 @@ const SLAReferencePage = (() => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><strong>Devendra Soni</strong></td>
-                            <td>Server Guy / Infrastructure</td>
-                            <td><a href="mailto:devsoni@hotmail.com" style="color: #6c7bff; text-decoration: none;">devsoni@hotmail.com</a></td>
-                            <td>—</td>
-                        </tr>
+                        ${serverUsers.map(u => `
+                            <tr>
+                                <td><strong>${Utils.escapeHTML(u.name)}</strong></td>
+                                <td>${Utils.escapeHTML(u.designation)}</td>
+                                <td><a href="mailto:${Utils.escapeHTML(u.email)}" style="color: #6c7bff; text-decoration: none;">${Utils.escapeHTML(u.email)}</a></td>
+                                <td>${u.phone ? `+91 ${Utils.escapeHTML(u.phone)}` : '—'}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             </div>
@@ -1389,6 +1372,10 @@ const SLAReferencePage = (() => {
     }
 
     function _renderServerContacts() {
+        const users = Store.getUsers() || [];
+        const clientPrimary = users.find(u => u.designation === 'Project Director' || u.name === 'Sunil Kumar Singh') || { name: 'Sunil Kumar Singh', designation: 'Project Director', email: 'sunilkumarsingh@literacyindia.org', phone: '9811820027' };
+        const provider = users.find(u => u.team === 'server' || u.name === 'Devendra Kumar Soni') || { name: 'Devendra Kumar Soni', designation: 'Server / Infrastructure Engineer', email: 'devsoni@hotmail.com', phone: '' };
+
         const contactsHtml = `
             <div class="sla-ref-table-wrap">
                 <table class="sla-ref-table">
@@ -1404,17 +1391,17 @@ const SLAReferencePage = (() => {
                     <tbody>
                         <tr>
                             <td><strong>Client Primary</strong></td>
-                            <td>Project Director</td>
-                            <td>Sunil Kumar Singh</td>
-                            <td><a href="mailto:sunilkumarsingh@literacyindia.org" style="color: #6c7bff; text-decoration: none;">sunilkumarsingh@literacyindia.org</a></td>
-                            <td>+91 9811820027</td>
+                            <td>${Utils.escapeHTML(clientPrimary.designation)}</td>
+                            <td><strong>${Utils.escapeHTML(clientPrimary.name)}</strong></td>
+                            <td><a href="mailto:${Utils.escapeHTML(clientPrimary.email)}" style="color: #6c7bff; text-decoration: none;">${Utils.escapeHTML(clientPrimary.email)}</a></td>
+                            <td>${clientPrimary.phone ? `+91 ${Utils.escapeHTML(clientPrimary.phone)}` : '—'}</td>
                         </tr>
                         <tr>
                             <td><strong>Service Provider</strong></td>
-                            <td>Server / Infrastructure Engineer</td>
-                            <td>Devendra Kumar Soni</td>
-                            <td><a href="mailto:devsoni@hotmail.com" style="color: #6c7bff; text-decoration: none;">devsoni@hotmail.com</a></td>
-                            <td>—</td>
+                            <td>${Utils.escapeHTML(provider.designation)}</td>
+                            <td><strong>${Utils.escapeHTML(provider.name)}</strong></td>
+                            <td><a href="mailto:${Utils.escapeHTML(provider.email)}" style="color: #6c7bff; text-decoration: none;">${Utils.escapeHTML(provider.email)}</a></td>
+                            <td>${provider.phone ? `+91 ${Utils.escapeHTML(provider.phone)}` : '—'}</td>
                         </tr>
                     </tbody>
                 </table>
