@@ -187,7 +187,10 @@ const Store = (() => {
                     companyName: s.companyName,
                     amcMonthlyCharge: parseFloat(s.amcMonthlyCharge) || 0,
                     reportingMonth: s.reportingMonth,
-                    autoEmail: s.autoEmail !== undefined ? s.autoEmail : true
+                    autoEmail: s.autoEmail !== undefined ? s.autoEmail : true,
+                    emailjsServiceId: s.emailjsServiceId || '',
+                    emailjsTemplateId: s.emailjsTemplateId || '',
+                    emailjsPublicKey: s.emailjsPublicKey || ''
                 };
                 _set(KEYS.SETTINGS, mergedSettings);
             }
@@ -221,7 +224,10 @@ const Store = (() => {
                     companyName: settings.companyName,
                     amcMonthlyCharge: settings.amcMonthlyCharge || 0,
                     reportingMonth: settings.reportingMonth,
-                    autoEmail: settings.autoEmail
+                    autoEmail: settings.autoEmail,
+                    emailjsServiceId: settings.emailjsServiceId || '',
+                    emailjsTemplateId: settings.emailjsTemplateId || '',
+                    emailjsPublicKey: settings.emailjsPublicKey || ''
                 });
             if (setErr) throw setErr;
 
@@ -890,7 +896,10 @@ const Store = (() => {
             amcMonthlyCharge: 0,
             companyName: 'LMS Operations',
             reportingMonth: new Date().toISOString().slice(0, 7),
-            autoEmail: true
+            autoEmail: true,
+            emailjsServiceId: '',
+            emailjsTemplateId: '',
+            emailjsPublicKey: ''
         };
     }
 
@@ -908,7 +917,10 @@ const Store = (() => {
                 companyName: settings.companyName,
                 amcMonthlyCharge: settings.amcMonthlyCharge || 0,
                 reportingMonth: settings.reportingMonth,
-                autoEmail: settings.autoEmail
+                autoEmail: settings.autoEmail,
+                emailjsServiceId: settings.emailjsServiceId || '',
+                emailjsTemplateId: settings.emailjsTemplateId || '',
+                emailjsPublicKey: settings.emailjsPublicKey || ''
             }).then(({ error }) => {
                 if (error) console.error("Supabase updateSettings background sync error:", error);
             });

@@ -316,6 +316,35 @@ const App = (() => {
                 </button>
             </div>
 
+            <!-- ── EmailJS Configuration ─────────────────────────── -->
+            <div class="glass-card-static settings-section">
+                <h3 class="settings-section-title">✉️ EmailJS Automatic Mail System</h3>
+                <p class="text-sm text-secondary" style="line-height:1.6; margin-bottom: 16px;">
+                    Integrate <a href="https://www.emailjs.com/" target="_blank" style="color:var(--accent-primary); text-decoration:underline;">EmailJS</a> to trigger emails in the background instantly without launching client popups. Keep these blank to fallback to the mail client trigger.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label" for="settings-emailjs-service">Service ID</label>
+                    <input type="text" id="settings-emailjs-service" class="form-input"
+                           value="${Utils.escapeHTML(settings.emailjsServiceId || '')}"
+                           placeholder="e.g. service_xxxxxxx">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="settings-emailjs-template">Template ID</label>
+                    <input type="text" id="settings-emailjs-template" class="form-input"
+                           value="${Utils.escapeHTML(settings.emailjsTemplateId || '')}"
+                           placeholder="e.g. template_xxxxxxx">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="settings-emailjs-public">Public Key (API Key)</label>
+                    <input type="text" id="settings-emailjs-public" class="form-input"
+                           value="${Utils.escapeHTML(settings.emailjsPublicKey || '')}"
+                           placeholder="e.g. public_xxxxxxx">
+                </div>
+            </div>
+
             <!-- ── Data Management ───────────────────────────────── -->
             <div class="glass-card-static settings-section">
                 <h3 class="settings-section-title">Data Management</h3>
@@ -408,7 +437,19 @@ const App = (() => {
             const reportingMonth = document.getElementById('settings-month').value;
             const autoEmail      = document.getElementById('settings-auto-email').checked;
 
-            Store.updateSettings({ companyName, amcMonthlyCharge, reportingMonth, autoEmail });
+            const emailjsServiceId  = document.getElementById('settings-emailjs-service').value.trim();
+            const emailjsTemplateId = document.getElementById('settings-emailjs-template').value.trim();
+            const emailjsPublicKey  = document.getElementById('settings-emailjs-public').value.trim();
+
+            Store.updateSettings({ 
+                companyName, 
+                amcMonthlyCharge, 
+                reportingMonth, 
+                autoEmail,
+                emailjsServiceId,
+                emailjsTemplateId,
+                emailjsPublicKey
+            });
             showToast('Settings saved successfully.', 'success');
         });
 
