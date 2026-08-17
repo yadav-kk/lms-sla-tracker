@@ -20,7 +20,9 @@ const SLAReferencePage = (() => {
     };
 
     // Track active tab so we can restore it on re-render
+    let _activeSlaType = 'lms'; // 'lms' | 'server'
     let _activeTab = 'sla-standards';
+    let _activeServerTab = 'server-purpose';
 
     // ── Scoped CSS ──────────────────────────────────────────────
     function _injectStyles() {
@@ -1081,14 +1083,364 @@ const SLAReferencePage = (() => {
         return cardClient + cardBackend + cardServer;
     }
 
+    // ── Server SLA Renderers ────────────────────────────────────
+    function _renderServerPurpose() {
+        const purposeHtml = `
+            <p style="line-height:1.6; margin-bottom:14px; font-size:0.95rem;">
+                This Service Level Agreement (SLA) explains the server and hosting services that the Service Provider will provide to Literacy India. It also explains how quickly problems must be attended to, how backups will be managed, and how service performance will be checked.
+            </p>
+            <div style="margin-top:20px;">
+                <h3 style="font-size:1rem; font-weight:600; margin-bottom:12px; color:var(--text-primary);">Agreement Metadata</h3>
+                <div class="sla-ref-table-wrap">
+                    <table class="sla-ref-table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Organisation</strong></td>
+                                <td>Literacy India</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Service Provider / Server Engineer</strong></td>
+                                <td>Devendra Kumar Soni</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Agreement Reference</strong></td>
+                                <td><span class="tag" style="background: rgba(108, 92, 231, 0.15); color: #a855f7; border: 1px solid rgba(108, 92, 231, 0.3);">LI-IT-SLA-2026-27</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Fiscal Year</strong></td>
+                                <td>FY 2026–27</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        const coverageHtml = `
+            <p style="line-height:1.6; margin-bottom:16px;">This SLA covers the server hosting infrastructure, accessibility, and configuration for the following platforms:</p>
+            <div class="metrics-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 12px;">
+                <div class="glass-card-static" style="padding: 16px; text-align: center; border-radius: 8px; border: 1px solid var(--border-glass);">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">🏫</div>
+                    <strong style="display:block; color:var(--text-primary);">LMS</strong>
+                    <span style="font-size:0.75rem; color:var(--text-secondary);">Learning Management System</span>
+                </div>
+                <div class="glass-card-static" style="padding: 16px; text-align: center; border-radius: 8px; border: 1px solid var(--border-glass);">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">👥</div>
+                    <strong style="display:block; color:var(--text-primary);">Beneficiary System</strong>
+                    <span style="font-size:0.75rem; color:var(--text-secondary);">Beneficiary Management Portal</span>
+                </div>
+                <div class="glass-card-static" style="padding: 16px; text-align: center; border-radius: 8px; border: 1px solid var(--border-glass);">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">🌐</div>
+                    <strong style="display:block; color:var(--text-primary);">Main Website</strong>
+                    <span style="font-size:0.75rem; color:var(--text-secondary);">literacyindia.org main website</span>
+                </div>
+                <div class="glass-card-static" style="padding: 16px; text-align: center; border-radius: 8px; border: 1px solid var(--border-glass);">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">🔌</div>
+                    <strong style="display:block; color:var(--text-primary);">Other Applications</strong>
+                    <span style="font-size:0.75rem; color:var(--text-secondary);">Other hosted web-based applications</span>
+                </div>
+            </div>
+        `;
+
+        return _card('<span class="sla-ref-icon">📜</span> 1. Purpose of this SLA', purposeHtml) +
+               _card('<span class="sla-ref-icon">🖥️</span> 2. Platforms Covered', coverageHtml);
+    }
+
+    function _renderServerResponsibilities() {
+        const serverHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li>Keep the server and hosted websites available and working.</li>
+                <li>Monitor server health, CPU, RAM, storage and other important resources.</li>
+                <li>Check and fix server problems before they become major problems where reasonably possible.</li>
+                <li>Keep enough free storage space for normal operations.</li>
+                <li>Take preventive action when server storage reaches about <strong>80%</strong> and inform Literacy India if it reaches <strong>90% or more</strong>.</li>
+            </ul>
+        `;
+
+        const webApiHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li>Make sure the covered websites are reachable and working.</li>
+                <li>Monitor important APIs and investigate API failures.</li>
+                <li>Support API configuration and connectivity problems that are part of the server/hosting scope.</li>
+            </ul>
+        `;
+
+        const dbHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li>Keep the databases available, secure and properly maintained.</li>
+                <li>Monitor database health and performance.</li>
+                <li>Investigate database errors, corruption and service failures.</li>
+                <li>Maintain database backups as described in this SLA.</li>
+            </ul>
+        `;
+
+        const securityHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li>Monitor SSL/TLS certificates and renew them before expiry.</li>
+                <li>Start certificate renewal at least <strong>30 days</strong> before expiry wherever technically possible.</li>
+                <li>Apply critical server security updates and patches within <strong>7 days</strong> of release.</li>
+                <li>Maintain server firewall and access controls.</li>
+                <li><span class="status-badge status-escalated" style="padding: 2px 6px; font-size: 0.75rem; vertical-align: middle;">Important</span> Any security hack or major security incident will be treated as a P1 issue.</li>
+            </ul>
+        `;
+
+        return _card('<span class="sla-ref-icon">🌐</span> 3.1 Server &amp; Hosting', serverHtml) +
+               _card('<span class="sla-ref-icon">🔗</span> 3.2 Websites &amp; APIs', webApiHtml) +
+               _card('<span class="sla-ref-icon">🗄️</span> 3.3 Database Management', dbHtml) +
+               _card('<span class="sla-ref-icon">🔒</span> 3.4 SSL, Security &amp; Updates', securityHtml);
+    }
+
+    function _renderServerTargets() {
+        const uptimeHtml = `
+            <div style="display:flex; align-items:center; gap:20px; margin-bottom:15px;">
+                <div style="font-size:2.5rem; font-weight:700; color:var(--success);">99.5%</div>
+                <div style="line-height:1.4;">
+                    <strong>Target Monthly Availability Target</strong><br>
+                    <span style="color:var(--text-secondary); font-size:0.85rem;">Excludes approved maintenance windows and outages caused solely by external provider service disruptions.</span>
+                </div>
+            </div>
+        `;
+
+        const matrixHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Priority</th>
+                            <th>When to Use / Impact</th>
+                            <th>Response Target</th>
+                            <th>Resolution Target</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-left: 4px solid #ff4757;">
+                            <td><strong style="color:#ff4757;">P1 – Critical</strong></td>
+                            <td>Website down, main server crash, database corruption, security hack, or major service outage.</td>
+                            <td><strong>15 minutes</strong></td>
+                            <td><strong>2 hours</strong></td>
+                        </tr>
+                        <tr style="border-left: 4px solid #ffa502;">
+                            <td><strong style="color:#ffa502;">P2 – Medium</strong></td>
+                            <td>Website is open but important APIs fail, users cannot log in, tracking stops, or server is very slow.</td>
+                            <td><strong>60 minutes</strong></td>
+                            <td><strong>12 hours</strong></td>
+                        </tr>
+                        <tr style="border-left: 4px solid #3742fa;">
+                            <td><strong style="color:#3742fa;">P3 – Low</strong></td>
+                            <td>Routine updates, log checking, new API paths, disk-space work, or minor support.</td>
+                            <td><strong>2 hours</strong></td>
+                            <td><strong>3 business days</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:14px; font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">
+                ℹ️ <strong>SLA Clock Trigger:</strong> The SLA clock starts when the issue is reported through the agreed support channel or detected by the server monitoring system. The resolution clock ends when the service is restored and Literacy India is informed.
+                <br>🚨 <strong>Incident Handling:</strong> P1 issues must be actively worked on until service is restored. For a P1 issue, a Root Cause Analysis (RCA) must be submitted within <strong>2 business days</strong> of service restoration.
+            </div>
+        `;
+
+        const deductionsHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Incident Priority</th>
+                            <th>Condition</th>
+                            <th>Invoice Deduction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-left: 4px solid #ff4757;">
+                            <td><strong>P1 Target Missed</strong></td>
+                            <td>Resolution target (>2 hours) missed</td>
+                            <td><span style="color:#ff4757; font-weight:600;">10% of monthly invoice</span> per incident</td>
+                        </tr>
+                        <tr style="border-left: 4px solid #ffa502;">
+                            <td><strong>P2 Target Missed</strong></td>
+                            <td>Resolution target (>12 hours) missed</td>
+                            <td><span style="color:#ffa502; font-weight:600;">5% of monthly invoice</span> per incident</td>
+                        </tr>
+                        <tr style="border-left: 4px solid #3742fa;">
+                            <td><strong>P3 Target Missed</strong></td>
+                            <td>Resolution target (>3 business days) missed</td>
+                            <td>Performance review; no automatic deduction</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">
+                ⚠️ <strong>Invoice Cap:</strong> Total SLA deductions in one month will normally not exceed <strong>20%</strong> of the monthly service invoice. Repeated or serious failures may lead to formal contract and performance reviews.
+            </div>
+        `;
+
+        return _card('<span class="sla-ref-icon">⚡</span> 4. Service Availability Target', uptimeHtml) +
+               _card('<span class="sla-ref-icon">⏱️</span> 5. Support Priority &amp; Response Time', matrixHtml) +
+               _card('<span class="sla-ref-icon">💰</span> 14. SLA Breach Invoice Deductions', deductionsHtml);
+    }
+
+    function _renderServerBackups() {
+        const procedureHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li><strong>Automatic daily database backups</strong> must be configured.</li>
+                <li><strong>Application code</strong> must be backed up at least <strong>weekly</strong>.</li>
+                <li>Backup files must be stored securely and encrypted where supported.</li>
+                <li>Backups must be retained for at least <strong>30 days</strong>.</li>
+                <li>Backup success and failure must be checked regularly. A failed backup must be investigated and corrected as soon as possible.</li>
+            </ul>
+        `;
+
+        const recoveryHtml = `
+            <table class="sla-ref-table" style="margin-bottom:12px;">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Target Threshold</th>
+                        <th>Definition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>RTO (Recovery Time Objective)</strong></td>
+                        <td><span class="tag">4 Hours</span></td>
+                        <td>Maximum target to bring a crashed server or database online using available backups.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RPO (Recovery Point Objective)</strong></td>
+                        <td><span class="tag">1 Hour</span></td>
+                        <td>Maximum target of recent data loss window.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5; margin-top:8px;">
+                🔄 <strong>Backup Restoration Testing:</strong> Backup restoration must be tested at least <strong>once every quarter</strong> and the result must be recorded in the SLA report.
+            </div>
+        `;
+
+        return _card('<span class="sla-ref-icon">💾</span> Backup &amp; Data Policies', procedureHtml) +
+               _card('<span class="sla-ref-icon">🔄</span> Disaster Recovery Metrics', recoveryHtml);
+    }
+
+    function _renderServerMaintenance() {
+        const windowHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li><strong>Approved maintenance window:</strong> Saturday and Sunday, <strong>01:00 PM to 06:00 PM IST</strong>.</li>
+                <li>Heavy server work, server restarts, or updates taking websites offline should normally be done in this window.</li>
+                <li>At least <strong>48 hours’ advance notice</strong> must be given to Literacy India for planned work.</li>
+                <li>Notice must explain changes, expected downtime, and completion target.</li>
+                <li>Emergency security or recovery work may be done outside this window when necessary. Literacy India must be informed as soon as possible.</li>
+            </ul>
+        `;
+
+        const credentialsHtml = `
+            <ul class="sla-ref-info-list" style="line-height:1.7;">
+                <li>All server, hosting, domain, DNS, and database access credentials must be authorized.</li>
+                <li>Credentials must never be shared with unauthorized persons.</li>
+                <li>The Service Provider must not use Literacy India data for personal or unrelated purposes.</li>
+                <li><strong>Data Ownership:</strong> Literacy India remains the exclusive owner of its data, applications, domains, and business info.</li>
+                <li>Accounts should be registered under Literacy India-controlled emails with delegated engineer access.</li>
+            </ul>
+        `;
+
+        const boundariesHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Server / Hosting Engineer Scope</th>
+                            <th>Application Developer Scope</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="vertical-align:top; width:50%;">
+                                <ul style="padding-left:14px; margin:0; line-height:1.6; font-size:0.85rem;">
+                                    <li>Server hardware/hosting setup</li>
+                                    <li>Server configuration &amp; firewall</li>
+                                    <li>Database infrastructure &amp; health</li>
+                                    <li>Backups &amp; disaster recovery</li>
+                                    <li>SSL certificates &amp; DNS routing</li>
+                                    <li>Server health monitoring</li>
+                                    <li>Security patching</li>
+                                </ul>
+                            </td>
+                            <td style="vertical-align:top; width:50%;">
+                                <ul style="padding-left:14px; margin:0; line-height:1.6; font-size:0.85rem;">
+                                    <li>Application code/bugs</li>
+                                    <li>Business logic issues</li>
+                                    <li>UI / front-end design problems</li>
+                                    <li>New feature development</li>
+                                    <li>Application code defects</li>
+                                    <li>Functional custom changes</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:10px; line-height:1.5;">
+                💡 If the server is working correctly but an application has code defects, it goes to the development team. The Server Engineer supports infrastructure-level investigation if required.
+            </div>
+        `;
+
+        return _card('<span class="sla-ref-icon">⚙️</span> 10. Maintenance &amp; Planned Changes', windowHtml) +
+               _card('<span class="sla-ref-icon">🔒</span> 11. Access, Security &amp; Ownership', credentialsHtml) +
+               _card('<span class="sla-ref-icon">⚖️</span> 16. Server vs. Developer Scope', boundariesHtml);
+    }
+
+    function _renderServerContacts() {
+        const contactsHtml = `
+            <div class="sla-ref-table-wrap">
+                <table class="sla-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Contact Role</th>
+                            <th>Designation</th>
+                            <th>Primary Resource</th>
+                            <th>Email Address</th>
+                            <th>Mobile Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Client Primary</strong></td>
+                            <td>Project Director</td>
+                            <td>Sunil Kumar Singh</td>
+                            <td><a href="mailto:sunilkumarsingh@literacyindia.org" style="color: #6c7bff; text-decoration: none;">sunilkumarsingh@literacyindia.org</a></td>
+                            <td>+91 9811820027</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Service Provider</strong></td>
+                            <td>Server / Infrastructure Engineer</td>
+                            <td>Devendra Kumar Soni</td>
+                            <td><a href="mailto:devsoni@hotmail.com" style="color: #6c7bff; text-decoration: none;">devsoni@hotmail.com</a></td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        return _card('<span class="sla-ref-icon">👥</span> 12. Support &amp; Escalation Contacts', contactsHtml);
+    }
+
     // ── Tab definitions ─────────────────────────────────────────
-    const TABS = [
+    const LMS_TABS = [
         { id: 'sla-standards',        label: 'SLA Standards',         icon: '📐', renderer: _renderSLAStandards },
         { id: 'penalties',            label: 'Penalties',             icon: '💰', renderer: _renderPenalties },
         { id: 'task-classification',  label: 'Task Classification',   icon: '🗂️', renderer: _renderTaskClassification },
         { id: 'escalation',          label: 'Escalation',            icon: '📈', renderer: _renderEscalation },
         { id: 'engineering-baselines', label: 'Engineering Baselines', icon: '⚙️', renderer: _renderEngineeringBaselines },
         { id: 'support-contacts',      label: 'Support Contacts',      icon: '👥', renderer: _renderSupportContacts }
+    ];
+
+    const SERVER_TABS = [
+        { id: 'server-purpose',          label: 'Purpose & Coverage',     icon: '📐', renderer: _renderServerPurpose },
+        { id: 'server-responsibilities', label: 'Responsibilities',       icon: '🛠️', renderer: _renderServerResponsibilities },
+        { id: 'server-targets',          label: 'Targets & Penalties',    icon: '⏱️', renderer: _renderServerTargets },
+        { id: 'server-backups',          label: 'Backup & Recovery',      icon: '💾', renderer: _renderServerBackups },
+        { id: 'server-maintenance',      label: 'Maintenance & Security', icon: '🔒', renderer: _renderServerMaintenance },
+        { id: 'server-contacts',         label: 'Support Contacts',       icon: '👥', renderer: _renderServerContacts }
     ];
 
     // ── Main render ─────────────────────────────────────────────
@@ -1100,12 +1452,24 @@ const SLAReferencePage = (() => {
             <div class="sla-ref-header">
                 <h1>📘 SLA Framework Reference</h1>
                 <p>Complete Service Level Agreement documentation — read-only reference for the LMS Operations team.</p>
+            </div>
+            
+            <div class="issues-view-tabs" id="sla-type-tabs" style="display: inline-flex; margin-bottom: 28px;">
+                <button class="view-tab ${_activeSlaType === 'lms' ? 'active' : ''}" data-type="lms" id="btn-sla-lms">
+                    🏫 LMS SLA Framework
+                </button>
+                <button class="view-tab ${_activeSlaType === 'server' ? 'active' : ''}" data-type="server" id="btn-sla-server">
+                    🖥️ Server &amp; Hosting SLA
+                </button>
             </div>`;
+
+        const currentTabs = _activeSlaType === 'lms' ? LMS_TABS : SERVER_TABS;
+        const currentActiveTab = _activeSlaType === 'lms' ? _activeTab : _activeServerTab;
 
         // Tab buttons
         html += `<div class="sla-ref-tabs" id="sla-ref-tabs-nav">`;
-        TABS.forEach(tab => {
-            const activeClass = tab.id === _activeTab ? 'active' : '';
+        currentTabs.forEach(tab => {
+            const activeClass = tab.id === currentActiveTab ? 'active' : '';
             html += `<button class="sla-ref-tab-btn ${activeClass}" data-tab="${tab.id}" id="sla-ref-tab-btn-${tab.id}">
                 ${tab.icon} ${tab.label}
             </button>`;
@@ -1113,14 +1477,26 @@ const SLAReferencePage = (() => {
         html += `</div>`;
 
         // Tab panels
-        TABS.forEach(tab => {
-            const activeClass = tab.id === _activeTab ? 'active' : '';
+        currentTabs.forEach(tab => {
+            const activeClass = tab.id === currentActiveTab ? 'active' : '';
             html += `<div class="sla-ref-panel ${activeClass}" id="sla-ref-panel-${tab.id}">
                 ${tab.renderer()}
             </div>`;
         });
 
         container.innerHTML = html;
+
+        // ── Event: SLA Type switching ───────────────────────────
+        const typeNav = container.querySelector('#sla-type-tabs');
+        typeNav.addEventListener('click', (e) => {
+            const btn = e.target.closest('.view-tab');
+            if (!btn) return;
+            const type = btn.dataset.type;
+            if (type !== _activeSlaType) {
+                _activeSlaType = type;
+                render(container); // Re-render everything!
+            }
+        });
 
         // ── Event: tab switching ────────────────────────────────
         const tabNav = container.querySelector('#sla-ref-tabs-nav');
@@ -1129,7 +1505,11 @@ const SLAReferencePage = (() => {
             if (!btn) return;
 
             const tabId = btn.dataset.tab;
-            _activeTab = tabId;
+            if (_activeSlaType === 'lms') {
+                _activeTab = tabId;
+            } else {
+                _activeServerTab = tabId;
+            }
 
             // Update button states
             tabNav.querySelectorAll('.sla-ref-tab-btn').forEach(b => b.classList.remove('active'));

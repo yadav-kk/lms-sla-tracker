@@ -186,7 +186,8 @@ const Store = (() => {
                     ...localSettings,
                     companyName: s.companyName,
                     amcMonthlyCharge: parseFloat(s.amcMonthlyCharge) || 0,
-                    reportingMonth: s.reportingMonth
+                    reportingMonth: s.reportingMonth,
+                    autoEmail: s.autoEmail !== undefined ? s.autoEmail : true
                 };
                 _set(KEYS.SETTINGS, mergedSettings);
             }
@@ -219,7 +220,8 @@ const Store = (() => {
                     id: 1,
                     companyName: settings.companyName,
                     amcMonthlyCharge: settings.amcMonthlyCharge || 0,
-                    reportingMonth: settings.reportingMonth
+                    reportingMonth: settings.reportingMonth,
+                    autoEmail: settings.autoEmail
                 });
             if (setErr) throw setErr;
 
@@ -887,7 +889,8 @@ const Store = (() => {
         return _get(KEYS.SETTINGS) || {
             amcMonthlyCharge: 0,
             companyName: 'LMS Operations',
-            reportingMonth: new Date().toISOString().slice(0, 7)
+            reportingMonth: new Date().toISOString().slice(0, 7),
+            autoEmail: true
         };
     }
 
@@ -904,7 +907,8 @@ const Store = (() => {
                 id: 1,
                 companyName: settings.companyName,
                 amcMonthlyCharge: settings.amcMonthlyCharge || 0,
-                reportingMonth: settings.reportingMonth
+                reportingMonth: settings.reportingMonth,
+                autoEmail: settings.autoEmail
             }).then(({ error }) => {
                 if (error) console.error("Supabase updateSettings background sync error:", error);
             });

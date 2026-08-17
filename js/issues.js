@@ -757,6 +757,10 @@ const IssuesPage = (() => {
                 ${isEdit ? `<button class="btn btn-danger" id="issue-btn-delete">Delete</button>` : ''}
                 <div class="modal-footer-spacer"></div>
                 ${isEdit ? `<button class="btn btn-secondary" id="issue-btn-print-issue">🖨️ Print Issue</button>` : ''}
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; user-select: none; margin-right: 12px;">
+                    <input type="checkbox" id="issue-field-auto-email" ${Store.getSettings().autoEmail ? 'checked' : ''} style="cursor: pointer; width: auto; margin: 0;">
+                    Email Alert
+                </label>
                 <button class="btn btn-primary" id="issue-btn-save">${isEdit ? 'Save Changes' : 'Create Issue'}</button>
             </div>
         </div>`;
@@ -1085,10 +1089,13 @@ const IssuesPage = (() => {
         issueData.slaStatus = Utils.computeSLAStatus({ ...issueData, totalPausedMinutes: isEdit ? (Store.getIssueById(issueId)?.totalPausedMinutes || 0) : 0 });
         issueData.escalationLevel = Utils.computeEscalationLevel({ ...issueData, totalPausedMinutes: isEdit ? (Store.getIssueById(issueId)?.totalPausedMinutes || 0) : 0 });
 
+        const autoEmailChecked = modal.querySelector('#issue-field-auto-email')?.checked;
+        let savedIssue = null;
+
         if (isEdit) {
             // Detect status change for auto-note
             const oldIssue = Store.getIssueById(issueId);
-            Store.updateIssue(issueId, issueData);
+            savedIssue = Store.updateIssue(issueId, issueData);
 
             if (oldIssue && oldIssue.status !== status) {
                 Store.addIssueNote(issueId, `Status changed from ${oldIssue.status} to ${status}`, 'System');
@@ -1103,14 +1110,20 @@ const IssuesPage = (() => {
             issueData.attachments = modal._pendingAttachments || [];
             issueData.notes = modal._pendingNotes || [];
 
-            const created = Store.createIssue(issueData);
-            Store.addIssueNote(created.id, `Issue created with priority ${priority}`, 'System');
+            savedIssue = Store.createIssue(issueData);
+            Store.addIssueNote(savedIssue.id, `Issue created with priority ${priority}`, 'System');
 
             App.showToast('Issue created successfully', 'success');
         }
 
         closeModal(overlay);
         _renderCurrentView();
+
+        if (autoEmailChecked && savedIssue) {
+            setTimeout(() => {
+                _generateEmailAlert(null, savedIssue);
+            }, 250);
+        }
     }
 
     // ── Close modal ──────────────────────────────────────────────

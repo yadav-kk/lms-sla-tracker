@@ -302,6 +302,14 @@ const App = (() => {
                     <div class="form-hint">Default month used across Dashboard and Uptime views.</div>
                 </div>
 
+                <div class="form-group" style="margin-top: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-primary); cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="settings-auto-email" ${settings.autoEmail ? 'checked' : ''} style="cursor: pointer; width: auto; margin: 0;">
+                        Enable Automatic Mail System
+                    </label>
+                    <div class="form-hint">Automatically prompts email client upon creating or updating issues.</div>
+                </div>
+
                 <button id="settings-save-btn" class="btn btn-primary mt-4">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Settings
@@ -398,8 +406,9 @@ const App = (() => {
             const companyName    = document.getElementById('settings-company').value.trim();
             const amcMonthlyCharge = parseFloat(document.getElementById('settings-amc').value) || 0;
             const reportingMonth = document.getElementById('settings-month').value;
+            const autoEmail      = document.getElementById('settings-auto-email').checked;
 
-            Store.updateSettings({ companyName, amcMonthlyCharge, reportingMonth });
+            Store.updateSettings({ companyName, amcMonthlyCharge, reportingMonth, autoEmail });
             showToast('Settings saved successfully.', 'success');
         });
 
