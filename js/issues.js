@@ -1296,10 +1296,14 @@ const IssuesPage = (() => {
 
         // Recipient mapping
         let toEmails = [];
+        let rawCc = ['krishankant.yadav@literacyindia.org', 'sunilkumarsingh@literacyindia.org', 'opmeenu@gmail.com'];
+
         if (category === 'Backend Side') {
             toEmails = ['pradeep@reospark.com', 'harvinder.anan@gmail.com', 'arifansari@reospark.com'];
+            rawCc.push('priyesh.cbtech@gmail.com'); // Priyesh is only CC'd on Backend issues
         } else {
             toEmails = ['opmeenu@gmail.com', 'harvinder.anan@gmail.com'];
+            // Priyesh is not there for Content/General issues
         }
 
         const includeServer = modal ? modal.querySelector('#issue-field-include-server')?.checked : false;
@@ -1307,7 +1311,6 @@ const IssuesPage = (() => {
             toEmails.push('devsoni@hotmail.com');
         }
 
-        const rawCc = ['krishankant.yadav@literacyindia.org', 'sunilkumarsingh@literacyindia.org', 'opmeenu@gmail.com', 'priyesh.cbtech@gmail.com'];
         const ccEmails = rawCc.filter(e => !toEmails.includes(e));
 
         // Build direct link
