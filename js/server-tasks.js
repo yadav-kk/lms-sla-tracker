@@ -617,14 +617,14 @@ Server Operations Desk`;
                     App.showToast('Automatic server task email sent successfully!', 'success');
                 } else {
                     console.error('SmtpJS Server Task Email Error:', message);
-                    App.showToast('SmtpJS failed. Opening mail client...', 'warning');
+                    App.showToast(`SMTP Error: ${message}`, 'error');
                     
                     const mailtoUrl = `mailto:${toEmail}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                     window.location.href = mailtoUrl;
                 }
             }).catch((err) => {
                 console.error('SmtpJS Server Task Email Exception:', err);
-                App.showToast('SmtpJS failed. Opening mail client...', 'warning');
+                App.showToast(`SMTP Exception: ${err.message || err}`, 'error');
                 
                 const mailtoUrl = `mailto:${toEmail}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                 window.location.href = mailtoUrl;

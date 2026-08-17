@@ -1372,14 +1372,14 @@ LMS Operations Desk`;
                     App.showToast('Automatic email sent successfully!', 'success');
                 } else {
                     console.error('SmtpJS Send Error Message:', message);
-                    App.showToast('SmtpJS failed. Opening mail client...', 'warning');
+                    App.showToast(`SMTP Error: ${message}`, 'error');
                     
                     const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                     window.location.href = mailtoUrl;
                 }
             }).catch((err) => {
                 console.error('SmtpJS Send Exception:', err);
-                App.showToast('SmtpJS failed. Opening mail client...', 'warning');
+                App.showToast(`SMTP Exception: ${err.message || err}`, 'error');
                 
                 const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                 window.location.href = mailtoUrl;
