@@ -324,7 +324,8 @@ const ServerTasksPage = (() => {
 
     function _openTaskModal(taskId = null) {
         const isEdit = !!taskId;
-        const allAssignees = ['Devendra Kumar Soni', 'Sunil Kumar Singh', 'Arif', 'Pradeep', 'Harvinder', 'Priyesh Tiwari', 'OP Meenu'];
+        const users = Store.getUsers() || [];
+        const allAssignees = users.map(u => u.name);
 
         let data = {
             id: '',
@@ -408,22 +409,73 @@ const ServerTasksPage = (() => {
                                 <input type="date" class="form-input" id="srv-field-impl" value="${data.implementationDate || ''}">
                             </div>
                         </div>
+
+                        <div class="form-group mt-4" id="srv-email-routing-section">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="srv-field-auto-email" ${Store.getSettings().autoEmail ? 'checked' : ''} style="cursor: pointer; width: auto; margin: 0;">
+                                Send Email Alert on Save
+                            </label>
+                            
+                            <div id="srv-email-recipients-wrap" style="margin-top: 10px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-md); display: none;">
+                                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 8px;">Select CC Recipients</div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;" id="srv-email-cc-list">
+                                    <!-- CC checkboxes dynamically rendered -->
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="srv-btn-cancel">Cancel</button>
                     ${isEdit ? `<button class="btn btn-danger" id="srv-btn-delete">Delete</button>` : ''}
                     <div class="modal-footer-spacer"></div>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; user-select: none; margin-right: 12px;">
-                        <input type="checkbox" id="srv-field-auto-email" ${Store.getSettings().autoEmail ? 'checked' : ''} style="cursor: pointer; width: auto; margin: 0;">
-                        Email Alert
-                    </label>
                     <button class="btn btn-primary" id="srv-btn-save">${isEdit ? 'Save Changes' : 'Create Task'}</button>
                 </div>
             </div>`;
 
         document.body.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('active'));
+
+        // Dynamic CC setup
+        const ccListContainer = overlay.querySelector('#srv-email-cc-list');
+        const emailCheckbox = overlay.querySelector('#srv-field-auto-email');
+        const recipientsWrap = overlay.querySelector('#srv-email-recipients-wrap');
+
+        const renderCcRecipients = () => {
+            const currentAssigneeName = overlay.querySelector('#srv-field-assigned').value;
+            // Filter out the assignee from CC to avoid duplicate emails
+            const filteredUsers = users.filter(u => u.name !== currentAssigneeName && u.email);
+
+            ccListContainer.innerHTML = filteredUsers.map(u => {
+                // Sunil Kumar Singh (Project Director) & Krishankant Yadav (LMS Admin) checked by default
+                const isCheckedDefault = (u.designation === 'Project Director' || u.designation === 'LMS Administration' || u.name === 'Sunil Kumar Singh' || u.name === 'Krishankant Yadav');
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none; margin: 0;">
+                        <input type="checkbox" class="srv-cc-checkbox" value="${Utils.escapeHTML(u.email)}" ${isCheckedDefault ? 'checked' : ''} style="cursor: pointer; width: auto; margin: 0;">
+                        ${Utils.escapeHTML(u.name)} (${Utils.escapeHTML(u.designation || 'Team')})
+                    </label>
+                `;
+            }).join('');
+        };
+
+        const toggleRecipients = () => {
+            if (emailCheckbox.checked) {
+                recipientsWrap.style.display = 'block';
+                renderCcRecipients();
+            } else {
+                recipientsWrap.style.display = 'none';
+            }
+        };
+
+        emailCheckbox.addEventListener('change', toggleRecipients);
+        overlay.querySelector('#srv-field-assigned').addEventListener('change', () => {
+            if (emailCheckbox.checked) {
+                renderCcRecipients();
+            }
+        });
+
+        // Initialize state
+        toggleRecipients();
 
         const close = () => {
             overlay.classList.remove('active');
@@ -466,6 +518,13 @@ const ServerTasksPage = (() => {
             };
 
             const autoEmailChecked = overlay.querySelector('#srv-field-auto-email')?.checked;
+            const selectedCcEmails = [];
+            if (autoEmailChecked) {
+                overlay.querySelectorAll('.srv-cc-checkbox:checked').forEach(cb => {
+                    selectedCcEmails.push(cb.value);
+                });
+            }
+
             let saved = null;
 
             if (isEdit) {
@@ -481,13 +540,13 @@ const ServerTasksPage = (() => {
 
             if (autoEmailChecked && saved) {
                 setTimeout(() => {
-                    _generateServerTaskEmailAlert(saved);
+                    _generateServerTaskEmailAlert(saved, selectedCcEmails);
                 }, 250);
             }
         });
     }
 
-    function _generateServerTaskEmailAlert(task) {
+    function _generateServerTaskEmailAlert(task, ccEmails = []) {
         const id = task.id;
         const title = task.title;
         const workType = task.workType;
@@ -499,8 +558,10 @@ const ServerTasksPage = (() => {
         const endDate = task.endDate ? Utils.formatDate(task.endDate) : 'N/A';
         const implDate = task.implementationDate ? Utils.formatDate(task.implementationDate) : 'N/A';
 
-        const toEmails = ['devsoni@hotmail.com'];
-        const ccEmails = ['sunilkumarsingh@literacyindia.org', 'opmeenu@gmail.com', 'krishankant.yadav@literacyindia.org'];
+        // Resolve assignee email from users list
+        const users = Store.getUsers() || [];
+        const assigneeUser = users.find(u => u.name === assignedTo);
+        const toEmail = assigneeUser ? assigneeUser.email : 'devsoni@hotmail.com';
 
         const stageLabel = STAGE_LABELS[stage] || `Stage ${stage}`;
         const subject = `[SERVER TASK ALERT] [${stageLabel}] ${id}: ${title}`;
@@ -545,7 +606,7 @@ Server Operations Desk`;
                 Host: smtpHost || 'smtp.gmail.com',
                 Username: smtpUsername,
                 Password: smtpPassword,
-                To: toEmails.join(','),
+                To: toEmail,
                 Cc: ccEmails.join(','),
                 From: smtpUsername,
                 Subject: subject,
@@ -557,18 +618,18 @@ Server Operations Desk`;
                     console.error('SmtpJS Server Task Email Error:', message);
                     App.showToast('SmtpJS failed. Opening mail client...', 'warning');
                     
-                    const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    const mailtoUrl = `mailto:${toEmail}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                     window.location.href = mailtoUrl;
                 }
             }).catch((err) => {
                 console.error('SmtpJS Server Task Email Exception:', err);
                 App.showToast('SmtpJS failed. Opening mail client...', 'warning');
                 
-                const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                const mailtoUrl = `mailto:${toEmail}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                 window.location.href = mailtoUrl;
             });
         } else {
-            const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            const mailtoUrl = `mailto:${toEmail}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             window.location.href = mailtoUrl;
         }
     }
