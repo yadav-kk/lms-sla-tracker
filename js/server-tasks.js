@@ -1,11 +1,11 @@
 /**
- * server-tasks.js — Server Task Tracker module
+ * server-tasks.js — Server Task Tracker module (Stored inside dev_tasks table as "Server Side" work type)
  * LMS SLA Tracker
  */
 
 const ServerTasksPage = (() => {
     let _container = null;
-    let _filters = { stage: 'all', testingStatus: 'all', workType: 'all', search: '', startDate: '', endDate: '', implDate: '' };
+    let _filters = { stage: 'all', testingStatus: 'all', search: '', startDate: '', endDate: '', implDate: '' };
     let _sort = { column: 'id', direction: 'asc' };
 
     const STAGE_LABELS = {
@@ -69,8 +69,13 @@ const ServerTasksPage = (() => {
         }
     }
 
+    function _getServerTasks() {
+        // Query dev tasks table and filter by "Server Side" workType
+        return Store.getDevTasks().filter(t => t.workType === 'Server Side');
+    }
+
     function _renderMetrics(container) {
-        const tasks = Store.getServerTasks();
+        const tasks = _getServerTasks();
         const total = tasks.length;
         const inProgress = tasks.filter(t => t.stage === 2).length;
         const inTesting = tasks.filter(t => t.stage === 3).length;
@@ -96,21 +101,11 @@ const ServerTasksPage = (() => {
     }
 
     function _renderFilters(container) {
-        const tasks = Store.getServerTasks();
-        const workTypes = [...new Set(tasks.map(t => t.workType))].sort();
-
         container.innerHTML = `
             <div class="filters-bar" style="gap: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label" style="font-size:0.7rem;">Search</label>
                     <input type="text" class="form-input" id="srv-filter-search" value="${Utils.escapeHTML(_filters.search)}" placeholder="Search task title/desc...">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" style="font-size:0.7rem;">Work Category</label>
-                    <select class="form-select" id="srv-filter-worktype">
-                        <option value="all">All Categories</option>
-                        ${workTypes.map(w => `<option value="${Utils.escapeHTML(w)}" ${_filters.workType === w ? 'selected' : ''}>${Utils.escapeHTML(w)}</option>`).join('')}
-                    </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label" style="font-size:0.7rem;">Stage</label>
@@ -126,6 +121,9 @@ const ServerTasksPage = (() => {
                         ${TESTING_STATUSES.map(s => `<option value="${s}" ${_filters.testingStatus === s ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                 </div>
+                <div class="form-group" style="margin-bottom: 0; display: flex; align-items: flex-end;">
+                    <button class="btn btn-secondary btn-full" id="srv-filter-reset">Reset Filters</button>
+                </div>
             </div>
             <div class="filters-bar mt-3" style="gap: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                 <div class="form-group" style="margin-bottom: 0;">
@@ -140,9 +138,6 @@ const ServerTasksPage = (() => {
                     <label class="form-label" style="font-size:0.7rem;">Implementation Date</label>
                     <input type="date" class="form-input" id="srv-filter-impldate" value="${_filters.implDate}">
                 </div>
-                <div class="form-group" style="margin-bottom: 0; display: flex; align-items: flex-end;">
-                    <button class="btn btn-secondary btn-full" id="srv-filter-reset">Reset Filters</button>
-                </div>
             </div>`;
 
         // Filter event listeners
@@ -151,11 +146,6 @@ const ServerTasksPage = (() => {
             _filters.search = searchInput.value.trim();
             _applyFilters();
         }, 300));
-
-        container.querySelector('#srv-filter-worktype').addEventListener('change', (e) => {
-            _filters.workType = e.target.value;
-            _applyFilters();
-        });
 
         container.querySelector('#srv-filter-stage').addEventListener('change', (e) => {
             _filters.stage = e.target.value;
@@ -183,7 +173,7 @@ const ServerTasksPage = (() => {
         });
 
         container.querySelector('#srv-filter-reset').addEventListener('click', () => {
-            _filters = { stage: 'all', testingStatus: 'all', workType: 'all', search: '', startDate: '', endDate: '', implDate: '' };
+            _filters = { stage: 'all', testingStatus: 'all', search: '', startDate: '', endDate: '', implDate: '' };
             render(_container);
         });
     }
@@ -201,7 +191,7 @@ const ServerTasksPage = (() => {
     }
 
     function _getFilteredTasks() {
-        let tasks = Store.getServerTasks() || [];
+        let tasks = _getServerTasks();
 
         // Apply filters
         if (_filters.search) {
@@ -211,9 +201,6 @@ const ServerTasksPage = (() => {
                 (t.description && t.description.toLowerCase().includes(q)) ||
                 t.id.toLowerCase().includes(q)
             );
-        }
-        if (_filters.workType !== 'all') {
-            tasks = tasks.filter(t => t.workType === _filters.workType);
         }
         if (_filters.stage !== 'all') {
             tasks = tasks.filter(t => String(t.stage) === _filters.stage);
@@ -281,7 +268,6 @@ const ServerTasksPage = (() => {
                     <thead>
                         <tr>
                             ${sortHeader('id', 'Task ID')}
-                            ${sortHeader('workType', 'Work Category')}
                             ${sortHeader('title', 'Title')}
                             ${sortHeader('stage', 'Development Stage')}
                             ${sortHeader('testingStatus', 'Testing Status')}
@@ -297,7 +283,6 @@ const ServerTasksPage = (() => {
                             return `
                                 <tr class="task-row" data-id="${t.id}" style="cursor: pointer;">
                                     <td><strong style="color:var(--accent-primary);">${t.id}</strong></td>
-                                    <td><span class="tag">${Utils.escapeHTML(t.workType)}</span></td>
                                     <td><strong>${Utils.escapeHTML(t.title)}</strong></td>
                                     <td>
                                         <span style="font-size:0.85rem; color:var(--text-primary);">
@@ -340,11 +325,10 @@ const ServerTasksPage = (() => {
     function _openTaskModal(taskId = null) {
         const isEdit = !!taskId;
         const allAssignees = ['Devendra Kumar Soni', 'Sunil Kumar Singh', 'Arif', 'Pradeep', 'Harvinder', 'Priyesh Tiwari', 'OP Meenu'];
-        const workCategories = ['Server', 'Hosting', 'Database', 'Security', 'Maintenance'];
 
         let data = {
             id: '',
-            workType: 'Server',
+            workType: 'Server Side',
             title: '',
             description: '',
             phase: 1,
@@ -357,7 +341,7 @@ const ServerTasksPage = (() => {
         };
 
         if (isEdit) {
-            const task = Store.getServerTasks().find(t => t.id === taskId);
+            const task = _getServerTasks().find(t => t.id === taskId);
             if (!task) return;
             data = { ...task };
         }
@@ -384,15 +368,7 @@ const ServerTasksPage = (() => {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="width: 25%; margin-bottom: 0;">
-                                <label class="form-label" for="srv-field-worktype">Work Category</label>
-                                <select class="form-select" id="srv-field-worktype">
-                                    ${workCategories.map(w => `
-                                        <option value="${w}" ${data.workType === w ? 'selected' : ''}>${w}</option>
-                                    `).join('')}
-                                </select>
-                            </div>
-                            <div class="form-group" style="width: 25%; margin-bottom: 0;">
+                            <div class="form-group" style="width: 35%; margin-bottom: 0;">
                                 <label class="form-label" for="srv-field-stage">Current Stage</label>
                                 <select class="form-select" id="srv-field-stage">
                                     ${Object.entries(STAGE_LABELS).map(([k, v]) => `
@@ -400,7 +376,7 @@ const ServerTasksPage = (() => {
                                     `).join('')}
                                 </select>
                             </div>
-                            <div class="form-group" style="width: 20%; margin-bottom: 0;">
+                            <div class="form-group" style="width: 30%; margin-bottom: 0;">
                                 <label class="form-label" for="srv-field-status">Testing Status</label>
                                 <select class="form-select" id="srv-field-status">
                                     ${TESTING_STATUSES.map(s => `
@@ -408,7 +384,7 @@ const ServerTasksPage = (() => {
                                     `).join('')}
                                 </select>
                             </div>
-                            <div class="form-group" style="width: 30%; margin-bottom: 0;">
+                            <div class="form-group" style="width: 35%; margin-bottom: 0;">
                                 <label class="form-label" for="srv-field-assigned">Assigned To</label>
                                 <select class="form-select" id="srv-field-assigned">
                                     ${allAssignees.map(n => `
@@ -461,7 +437,7 @@ const ServerTasksPage = (() => {
         if (isEdit) {
             overlay.querySelector('#srv-btn-delete').addEventListener('click', () => {
                 if (confirm(`Are you sure you want to delete task ${data.id}?`)) {
-                    Store.deleteServerTask(data.id);
+                    Store.deleteDevTask(data.id);
                     App.showToast('Task deleted successfully', 'info');
                     close();
                     _applyFilters();
@@ -477,7 +453,7 @@ const ServerTasksPage = (() => {
             }
 
             const payload = {
-                workType: overlay.querySelector('#srv-field-worktype').value.trim(),
+                workType: 'Server Side',
                 title: overlay.querySelector('#srv-field-title').value.trim(),
                 description: overlay.querySelector('#srv-field-desc').value.trim(),
                 phase: 1,
@@ -493,10 +469,10 @@ const ServerTasksPage = (() => {
             let saved = null;
 
             if (isEdit) {
-                saved = Store.updateServerTask(data.id, payload);
+                saved = Store.updateDevTask(data.id, payload);
                 App.showToast('Task updated successfully', 'success');
             } else {
-                saved = Store.createServerTask(payload);
+                saved = Store.createDevTask(payload);
                 App.showToast('Task created successfully', 'success');
             }
 

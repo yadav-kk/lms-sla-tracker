@@ -10,7 +10,7 @@ const Store = (() => {
         SETTINGS: 'lms_sla_settings',
         COUNTERS: 'lms_sla_counters',
         DEV_TASKS: 'lms_sla_dev_tasks',
-        SERVER_TASKS: 'lms_sla_server_tasks'
+        USERS: 'lms_sla_users'
     };
 
     // ── Supabase Integration ─────────────────────────────────────
@@ -79,18 +79,6 @@ const Store = (() => {
                 devTasks = data;
             } catch (e) {
                 console.warn("Could not sync dev_tasks from Supabase (table might not exist yet):", e);
-            }
-
-            // Fetch server tasks gracefully (in case table doesn't exist yet)
-            let serverTasks = null;
-            try {
-                const { data, error } = await supabaseClient
-                    .from('server_tasks')
-                    .select('*');
-                if (error) throw error;
-                serverTasks = data;
-            } catch (e) {
-                console.warn("Could not sync server_tasks from Supabase (table might not exist yet):", e);
             }
 
             // Fetch users gracefully (in case table doesn't exist yet)
@@ -205,42 +193,7 @@ const Store = (() => {
                 }
             }
 
-            if (serverTasks && serverTasks.length > 0) {
-                const mappedServerTasks = serverTasks.map(t => ({
-                    id: t.id,
-                    workType: t.work_type,
-                    title: t.title,
-                    description: t.description,
-                    phase: t.phase || 1,
-                    stage: t.stage,
-                    startDate: t.start_date,
-                    endDate: t.end_date,
-                    implementationDate: t.implementation_date,
-                    testingStatus: t.testing_status,
-                    assignedTo: t.assigned_to || '',
-                    createdAt: t.created_at,
-                    updatedAt: t.updated_at
-                }));
-                _set(KEYS.SERVER_TASKS, mappedServerTasks);
-                
-                // Sync SRV counter
-                const counters = _get(KEYS.COUNTERS) || {};
-                serverTasks.forEach(t => {
-                    const count = parseInt(t.id.replace('SRV-', ''), 10);
-                    if (!isNaN(count) && (!counters['SRV'] || count > counters['SRV'])) {
-                        counters['SRV'] = count;
-                    }
-                });
-                _set(KEYS.COUNTERS, counters);
-            } else if (serverTasks && serverTasks.length === 0) {
-                const localServerTasks = getServerTasks();
-                if (localServerTasks.length > 0) {
-                    console.log("Cloud server_tasks table is empty. Auto-uploading local tasks to cloud...");
-                    uploadToCloud().catch(err => {
-                        console.error("Auto-uploading server_tasks to Supabase failed:", err);
-                    });
-                }
-            }
+
 
             if (users && users.length > 0) {
                 const mappedUsers = users.map(u => ({
@@ -389,32 +342,7 @@ const Store = (() => {
                 }
             }
 
-            // 5. Push server tasks (graceful error handling if table is not created yet)
-            const serverTasks = getServerTasks();
-            if (serverTasks.length > 0) {
-                const srvTasksToInsert = serverTasks.map(t => ({
-                    id: t.id,
-                    work_type: t.workType,
-                    title: t.title,
-                    description: t.description,
-                    phase: t.phase || 1,
-                    stage: t.stage,
-                    start_date: t.startDate || null,
-                    end_date: t.endDate || null,
-                    implementation_date: t.implementationDate || null,
-                    testing_status: t.testingStatus || 'Pending',
-                    assigned_to: t.assignedTo || null,
-                    updated_at: t.updatedAt || new Date().toISOString()
-                }));
-                try {
-                    const { error } = await supabaseClient
-                        .from('server_tasks')
-                        .upsert(srvTasksToInsert);
-                    if (error) throw error;
-                } catch (e) {
-                    console.warn("Could not upload server_tasks to Supabase (table might not exist yet):", e);
-                }
-            }
+
 
             // 6. Push users (graceful error handling if table is not created yet)
             const usersList = getUsers();
@@ -1018,131 +946,7 @@ const Store = (() => {
         }
     }
 
-    // ── Server Tasks ──────────────────────────────────────────────
-    const SEED_SERVER_TASKS = [
-        { workType: 'Server', title: 'Backup Verification Check', description: 'Run test restoration for monthly database backups to ensure RTO/RPO limits are compliant.' },
-        { workType: 'Hosting', title: 'SSL/TLS Certificate Renewal', description: 'Start the certificate renewal process for beneficiary.org and literacyindia.org.' },
-        { workType: 'Database', title: 'Database Index Optimization', description: 'Re-index queries on LMS tracking tables to improve query responsiveness.' }
-    ];
 
-    function getServerTasks() {
-        let tasks = _get(KEYS.SERVER_TASKS);
-        
-        if (!tasks || tasks.length === 0) {
-            tasks = SEED_SERVER_TASKS.map((t, idx) => {
-                const num = idx + 1;
-                return {
-                    id: `SRV-${String(num).padStart(4, '0')}`,
-                    workType: t.workType,
-                    title: t.title,
-                    description: t.description,
-                    phase: 1,
-                    stage: 1, // Stage 1: Backlog
-                    startDate: null,
-                    endDate: null,
-                    implementationDate: null,
-                    testingStatus: 'Pending',
-                    assignedTo: 'Devendra Kumar Soni',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-            });
-            _set(KEYS.SERVER_TASKS, tasks);
-            
-            // Set SRV counter
-            const counters = _get(KEYS.COUNTERS) || {};
-            counters['SRV'] = tasks.length;
-            _set(KEYS.COUNTERS, counters);
-        }
-        return tasks;
-    }
-
-    function createServerTask(data) {
-        const tasks = getServerTasks();
-        const now = new Date().toISOString();
-        const id = _nextId('SRV');
-        const task = {
-            id,
-            workType: data.workType || 'Server',
-            title: data.title || '',
-            description: data.description || '',
-            phase: parseInt(data.phase, 10) || 1,
-            stage: parseInt(data.stage, 10) || 1,
-            startDate: data.startDate || null,
-            endDate: data.endDate || null,
-            implementationDate: data.implementationDate || null,
-            testingStatus: data.testingStatus || 'Pending',
-            assignedTo: data.assignedTo || 'Devendra Kumar Soni',
-            createdAt: now,
-            updatedAt: now
-        };
-        tasks.push(task);
-        _set(KEYS.SERVER_TASKS, tasks);
-
-        // Supabase Background Sync
-        if (supabaseClient) {
-            supabaseClient.from('server_tasks').insert([{
-                id: task.id,
-                work_type: task.workType,
-                title: task.title,
-                description: task.description,
-                phase: task.phase,
-                stage: task.stage,
-                start_date: task.startDate,
-                end_date: task.endDate,
-                implementation_date: task.implementationDate,
-                testing_status: task.testingStatus,
-                assigned_to: task.assignedTo || null
-            }]).then(({ error }) => {
-                if (error) console.error("Supabase createServerTask background sync error:", error);
-            });
-        }
-
-        return task;
-    }
-
-    function updateServerTask(id, updates) {
-        const tasks = getServerTasks();
-        const idx = tasks.findIndex(t => t.id === id);
-        if (idx === -1) return null;
-        
-        const now = new Date().toISOString();
-        tasks[idx] = { ...tasks[idx], ...updates, updatedAt: now };
-        _set(KEYS.SERVER_TASKS, tasks);
-
-        // Supabase Background Sync
-        if (supabaseClient) {
-            const dbUpdates = { updated_at: now };
-            if ('workType' in updates) dbUpdates.work_type = updates.workType;
-            if ('title' in updates) dbUpdates.title = updates.title;
-            if ('description' in updates) dbUpdates.description = updates.description;
-            if ('phase' in updates) dbUpdates.phase = parseInt(updates.phase, 10);
-            if ('stage' in updates) dbUpdates.stage = parseInt(updates.stage, 10);
-            if ('startDate' in updates) dbUpdates.start_date = updates.startDate;
-            if ('endDate' in updates) dbUpdates.end_date = updates.endDate;
-            if ('implementationDate' in updates) dbUpdates.implementation_date = updates.implementationDate;
-            if ('testingStatus' in updates) dbUpdates.testing_status = updates.testingStatus;
-            if ('assignedTo' in updates) dbUpdates.assigned_to = updates.assignedTo || null;
-
-            supabaseClient.from('server_tasks').update(dbUpdates).eq('id', id).then(({ error }) => {
-                if (error) console.error("Supabase updateServerTask background sync error:", error);
-            });
-        }
-
-        return tasks[idx];
-    }
-
-    function deleteServerTask(id) {
-        const tasks = getServerTasks().filter(t => t.id !== id);
-        _set(KEYS.SERVER_TASKS, tasks);
-
-        // Supabase Background Sync
-        if (supabaseClient) {
-            supabaseClient.from('server_tasks').delete().eq('id', id).then(({ error }) => {
-                if (error) console.error("Supabase deleteServerTask background sync error:", error);
-            });
-        }
-    }
 
     // ── Users & Escalation ────────────────────────────────────────
     const SEED_USERS = [
@@ -1403,11 +1207,6 @@ const Store = (() => {
         updateDevTask,
         deleteDevTask,
 
-        // Server Tasks
-        getServerTasks,
-        createServerTask,
-        updateServerTask,
-        deleteServerTask,
 
         // Settings
         getSettings,

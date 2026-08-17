@@ -208,6 +208,9 @@ const DevTasksPage = (() => {
     function _getFilteredTasks() {
         let tasks = Store.getDevTasks();
 
+        // Exclude Server Side tasks from Dev Tasks view
+        tasks = tasks.filter(t => t.workType !== 'Server Side');
+
         // 1. Search Query
         if (_filters.search) {
             const query = _filters.search.toLowerCase();
