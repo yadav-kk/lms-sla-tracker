@@ -188,9 +188,10 @@ const Store = (() => {
                     amcMonthlyCharge: parseFloat(s.amcMonthlyCharge) || 0,
                     reportingMonth: s.reportingMonth,
                     autoEmail: s.autoEmail !== undefined ? s.autoEmail : true,
-                    emailjsServiceId: s.emailjsServiceId || '',
-                    emailjsTemplateId: s.emailjsTemplateId || '',
-                    emailjsPublicKey: s.emailjsPublicKey || ''
+                    smtpHost: s.smtpHost || 'smtp.gmail.com',
+                    smtpPort: s.smtpPort || '465',
+                    smtpUsername: s.smtpUsername || '',
+                    smtpPassword: s.smtpPassword || ''
                 };
                 _set(KEYS.SETTINGS, mergedSettings);
             }
@@ -225,9 +226,10 @@ const Store = (() => {
                     amcMonthlyCharge: settings.amcMonthlyCharge || 0,
                     reportingMonth: settings.reportingMonth,
                     autoEmail: settings.autoEmail,
-                    emailjsServiceId: settings.emailjsServiceId || '',
-                    emailjsTemplateId: settings.emailjsTemplateId || '',
-                    emailjsPublicKey: settings.emailjsPublicKey || ''
+                    smtpHost: settings.smtpHost || 'smtp.gmail.com',
+                    smtpPort: settings.smtpPort || '465',
+                    smtpUsername: settings.smtpUsername || '',
+                    smtpPassword: settings.smtpPassword || ''
                 });
             if (setErr) throw setErr;
 
@@ -897,9 +899,10 @@ const Store = (() => {
             companyName: 'LMS Operations',
             reportingMonth: new Date().toISOString().slice(0, 7),
             autoEmail: true,
-            emailjsServiceId: '',
-            emailjsTemplateId: '',
-            emailjsPublicKey: ''
+            smtpHost: 'smtp.gmail.com',
+            smtpPort: '465',
+            smtpUsername: '',
+            smtpPassword: ''
         };
     }
 
@@ -918,9 +921,10 @@ const Store = (() => {
                 amcMonthlyCharge: settings.amcMonthlyCharge || 0,
                 reportingMonth: settings.reportingMonth,
                 autoEmail: settings.autoEmail,
-                emailjsServiceId: settings.emailjsServiceId || '',
-                emailjsTemplateId: settings.emailjsTemplateId || '',
-                emailjsPublicKey: settings.emailjsPublicKey || ''
+                smtpHost: settings.smtpHost || 'smtp.gmail.com',
+                smtpPort: settings.smtpPort || '465',
+                smtpUsername: settings.smtpUsername || '',
+                smtpPassword: settings.smtpPassword || ''
             }).then(({ error }) => {
                 if (error) console.error("Supabase updateSettings background sync error:", error);
             });

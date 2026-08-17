@@ -316,32 +316,39 @@ const App = (() => {
                 </button>
             </div>
 
-            <!-- ── EmailJS Configuration ─────────────────────────── -->
+            <!-- ── SMTP Configuration (SmtpJS) ───────────────────────── -->
             <div class="glass-card-static settings-section">
-                <h3 class="settings-section-title">✉️ EmailJS Automatic Mail System</h3>
+                <h3 class="settings-section-title">✉️ SMTP Automatic Mail System</h3>
                 <p class="text-sm text-secondary" style="line-height:1.6; margin-bottom: 16px;">
-                    Integrate <a href="https://www.emailjs.com/" target="_blank" style="color:var(--accent-primary); text-decoration:underline;">EmailJS</a> to trigger emails in the background instantly without launching client popups. Keep these blank to fallback to the mail client trigger.
+                    Configure your Gmail SMTP settings with an App Password to trigger emails instantly in the background. Leave Username/Password blank to fall back to the mail client.
                 </p>
 
                 <div class="form-group">
-                    <label class="form-label" for="settings-emailjs-service">Service ID</label>
-                    <input type="text" id="settings-emailjs-service" class="form-input"
-                           value="${Utils.escapeHTML(settings.emailjsServiceId || '')}"
-                           placeholder="e.g. service_xxxxxxx">
+                    <label class="form-label" for="settings-smtp-host">SMTP Host</label>
+                    <input type="text" id="settings-smtp-host" class="form-input"
+                           value="${Utils.escapeHTML(settings.smtpHost || 'smtp.gmail.com')}"
+                           placeholder="e.g. smtp.gmail.com">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="settings-emailjs-template">Template ID</label>
-                    <input type="text" id="settings-emailjs-template" class="form-input"
-                           value="${Utils.escapeHTML(settings.emailjsTemplateId || '')}"
-                           placeholder="e.g. template_xxxxxxx">
+                    <label class="form-label" for="settings-smtp-port">SMTP Port</label>
+                    <input type="text" id="settings-smtp-port" class="form-input"
+                           value="${Utils.escapeHTML(settings.smtpPort || '465')}"
+                           placeholder="e.g. 465 or 587">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="settings-emailjs-public">Public Key (API Key)</label>
-                    <input type="text" id="settings-emailjs-public" class="form-input"
-                           value="${Utils.escapeHTML(settings.emailjsPublicKey || '')}"
-                           placeholder="e.g. public_xxxxxxx">
+                    <label class="form-label" for="settings-smtp-username">SMTP Username (Email)</label>
+                    <input type="text" id="settings-smtp-username" class="form-input"
+                           value="${Utils.escapeHTML(settings.smtpUsername || '')}"
+                           placeholder="e.g. support@gyantantra.org">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="settings-smtp-password">SMTP Password (App Password)</label>
+                    <input type="password" id="settings-smtp-password" class="form-input"
+                           value="${Utils.escapeHTML(settings.smtpPassword || '')}"
+                           placeholder="16-character Google App Password" autocomplete="new-password">
                 </div>
             </div>
 
@@ -437,18 +444,20 @@ const App = (() => {
             const reportingMonth = document.getElementById('settings-month').value;
             const autoEmail      = document.getElementById('settings-auto-email').checked;
 
-            const emailjsServiceId  = document.getElementById('settings-emailjs-service').value.trim();
-            const emailjsTemplateId = document.getElementById('settings-emailjs-template').value.trim();
-            const emailjsPublicKey  = document.getElementById('settings-emailjs-public').value.trim();
+            const smtpHost       = document.getElementById('settings-smtp-host').value.trim();
+            const smtpPort       = document.getElementById('settings-smtp-port').value.trim();
+            const smtpUsername   = document.getElementById('settings-smtp-username').value.trim();
+            const smtpPassword   = document.getElementById('settings-smtp-password').value;
 
             Store.updateSettings({ 
                 companyName, 
                 amcMonthlyCharge, 
                 reportingMonth, 
                 autoEmail,
-                emailjsServiceId,
-                emailjsTemplateId,
-                emailjsPublicKey
+                smtpHost,
+                smtpPort,
+                smtpUsername,
+                smtpPassword
             });
             showToast('Settings saved successfully.', 'success');
         });

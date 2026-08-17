@@ -1344,45 +1344,42 @@ Regards,
 LMS Operations Desk`;
 
         const settings = Store.getSettings();
-        const serviceId = settings.emailjsServiceId;
-        const templateId = settings.emailjsTemplateId;
-        const publicKey = settings.emailjsPublicKey;
+        const smtpHost = settings.smtpHost;
+        const smtpPort = settings.smtpPort;
+        const smtpUsername = settings.smtpUsername;
+        const smtpPassword = settings.smtpPassword;
 
-        if (serviceId && templateId && publicKey && window.emailjs) {
+        if (smtpUsername && smtpPassword && window.Email) {
             App.showToast('Sending background email alert...', 'info');
             
-            // Initialize EmailJS with the public key
-            window.emailjs.init({ publicKey: publicKey });
+            const htmlBody = body.replace(/\n/g, '<br>');
 
-            const templateParams = {
-                ticket_id: id,
-                ticket_category: category,
-                ticket_priority: priority,
-                ticket_title: title,
-                ticket_module: moduleName,
-                ticket_system_issue: systemIssue,
-                ticket_assigned_to: assignedTo,
-                ticket_start_date: startDate,
-                ticket_target_end_date: targetEndDate,
-                ticket_description: description,
-                ticket_link: directLink,
-                to_email: toEmails.join(','),
-                cc_email: ccEmails.join(','),
-                subject: subject,
-                body_text: body
-            };
-
-            window.emailjs.send(serviceId, templateId, templateParams)
-                .then(() => {
+            window.Email.send({
+                Host: smtpHost || 'smtp.gmail.com',
+                Username: smtpUsername,
+                Password: smtpPassword,
+                To: toEmails.join(','),
+                Cc: ccEmails.join(','),
+                From: smtpUsername,
+                Subject: subject,
+                Body: htmlBody
+            }).then((message) => {
+                if (message === 'OK') {
                     App.showToast('Automatic email sent successfully!', 'success');
-                })
-                .catch((err) => {
-                    console.error('EmailJS Send Error:', err);
-                    App.showToast('EmailJS failed. Opening mail client...', 'warning');
+                } else {
+                    console.error('SmtpJS Send Error Message:', message);
+                    App.showToast('SmtpJS failed. Opening mail client...', 'warning');
                     
                     const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                     window.location.href = mailtoUrl;
-                });
+                }
+            }).catch((err) => {
+                console.error('SmtpJS Send Exception:', err);
+                App.showToast('SmtpJS failed. Opening mail client...', 'warning');
+                
+                const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = mailtoUrl;
+            });
         } else {
             const mailtoUrl = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             window.location.href = mailtoUrl;
