@@ -93,6 +93,18 @@ const Store = (() => {
                 console.warn("Could not sync server_tasks from Supabase (table might not exist yet):", e);
             }
 
+            // Fetch users gracefully (in case table doesn't exist yet)
+            let users = null;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*');
+                if (error) throw error;
+                users = data;
+            } catch (e) {
+                console.warn("Could not sync users from Supabase (table might not exist yet):", e);
+            }
+
             // Save to LocalStorage cache
             if (issues) {
                 const mappedIssues = issues.map(i => ({
@@ -229,6 +241,28 @@ const Store = (() => {
                     });
                 }
             }
+
+            if (users && users.length > 0) {
+                const mappedUsers = users.map(u => ({
+                    id: u.id,
+                    level: u.level,
+                    designation: u.designation,
+                    name: u.name,
+                    email: u.email,
+                    phone: u.phone,
+                    team: u.team
+                }));
+                _set(KEYS.USERS, mappedUsers);
+            } else if (users && users.length === 0) {
+                const localUsers = getUsers();
+                if (localUsers.length > 0) {
+                    console.log("Cloud users table is empty. Auto-uploading local users to cloud...");
+                    uploadToCloud().catch(err => {
+                        console.error("Auto-uploading users to Supabase failed:", err);
+                    });
+                }
+            }
+
             if (settingsArr && settingsArr.length > 0) {
                 const s = settingsArr[0];
                 const localSettings = _get(KEYS.SETTINGS) || {};
@@ -382,6 +416,28 @@ const Store = (() => {
                 }
             }
 
+            // 6. Push users (graceful error handling if table is not created yet)
+            const usersList = getUsers();
+            if (usersList.length > 0) {
+                const usersToInsert = usersList.map(u => ({
+                    id: u.id,
+                    level: u.level || null,
+                    designation: u.designation,
+                    name: u.name,
+                    email: u.email,
+                    phone: u.phone,
+                    team: u.team
+                }));
+                try {
+                    const { error } = await supabaseClient
+                        .from('users')
+                        .upsert(usersToInsert);
+                    if (error) throw error;
+                } catch (e) {
+                    console.warn("Could not upload users to Supabase (table might not exist yet):", e);
+                }
+            }
+
             console.log("Successfully uploaded local data to Supabase Cloud Database!");
             return true;
         } catch (e) {
@@ -457,14 +513,7 @@ const Store = (() => {
         { module: 'Telemetry & Analytics', issue: 'Writing a brand-new custom SQL report query or manually structuring a custom data view', priority: 'P3', response: '2 Hours', resolution: '3-5 Business Days' }
     ];
 
-    // Escalation contacts
-    const ESCALATION_CONTACTS = [
-        { level: 1, designation: 'Helpdesk / Resident Engineer', names: ['Arif', 'Harvinder'], emails: ['arifansari@reospark.com', 'harvinder.anan@gmail.com'], phones: ['9871264243', '9801298785'] },
-        { level: 2, designation: 'Specialist Engineer', names: ['Pradeep', 'Arif'], emails: ['pradeep@reospark.com'], phones: ['9386292565', '9801298785'] },
-        { level: 3, designation: 'LMS Administration', names: ['Krishankant Yadav'], emails: ['krishankant.yadav@literacyindia.org'], phones: ['8743080876'] },
-        { level: 4, designation: 'Project Manager', names: ['OP Meenu', 'Priyesh Tiwari'], emails: ['opmeenu@gmail.com','priyesh.cbtech@gmail.com'], phones: ['9999644218', '7217766185'] },
-        { level: 5, designation: 'Project Director', names: ['Sunil Kumar Singh'], emails: ['sunilkumarsingh@literacyindia.org'], phones: ['9811820027'] }
-    ];
+    // Escalation contacts are now fetched dynamically from the database users table.
 
     // Escalation timelines (minutes)
     const ESCALATION_TIMELINES = {
@@ -1095,6 +1144,45 @@ const Store = (() => {
         }
     }
 
+    // ── Users & Escalation ────────────────────────────────────────
+    const SEED_USERS = [
+        { id: 1, level: 1, designation: 'Helpdesk / Resident Engineer', name: 'Arif', email: 'arifansari@reospark.com', phone: '9871264243', team: 'support' },
+        { id: 2, level: 1, designation: 'Helpdesk / Resident Engineer', name: 'Harvinder', email: 'harvinder.anan@gmail.com', phone: '9801298785', team: 'support' },
+        { id: 3, level: 2, designation: 'Specialist Engineer', name: 'Pradeep', email: 'pradeep@reospark.com', phone: '9386292565', team: 'support' },
+        { id: 4, level: 3, designation: 'LMS Administration', name: 'Krishankant Yadav', email: 'krishankant.yadav@literacyindia.org', phone: '8743080876', team: 'client' },
+        { id: 5, level: 4, designation: 'Project Manager', name: 'OP Meenu', email: 'opmeenu@gmail.com', phone: '9999644218', team: 'management' },
+        { id: 6, level: 4, designation: 'Project Manager', name: 'Priyesh Tiwari', email: 'priyesh.cbtech@gmail.com', phone: '7217766185', team: 'management' },
+        { id: 7, level: 5, designation: 'Project Director', name: 'Sunil Kumar Singh', email: 'sunilkumarsingh@literacyindia.org', phone: '9811820027', team: 'client' },
+        { id: 8, level: null, designation: 'Server / Infrastructure Engineer', name: 'Devendra Kumar Soni', email: 'devsoni@hotmail.com', phone: '', team: 'server' }
+    ];
+
+    function getUsers() {
+        let users = _get(KEYS.USERS);
+        if (!users || users.length === 0) {
+            users = [...SEED_USERS];
+            _set(KEYS.USERS, users);
+        }
+        return users;
+    }
+
+    function getDynamicEscalationContacts() {
+        const users = getUsers();
+        const levels = [1, 2, 3, 4, 5];
+        return levels.map(lvl => {
+            const levelUsers = users.filter(u => u.level === lvl);
+            if (levelUsers.length === 0) {
+                return { level: lvl, designation: 'Unassigned', names: [], emails: [], phones: [] };
+            }
+            return {
+                level: lvl,
+                designation: levelUsers[0].designation,
+                names: levelUsers.map(u => u.name),
+                emails: levelUsers.map(u => u.email),
+                phones: levelUsers.map(u => u.phone || '')
+            };
+        });
+    }
+
     // ── Settings ─────────────────────────────────────────────────
     function getSettings() {
         return _get(KEYS.SETTINGS) || {
@@ -1288,8 +1376,9 @@ const Store = (() => {
         PAUSE_REASONS,
         FUNCTIONAL_MODULES,
         TASK_MATRIX,
-        ESCALATION_CONTACTS,
+        get ESCALATION_CONTACTS() { return getDynamicEscalationContacts(); },
         ESCALATION_TIMELINES,
+        getUsers,
 
         // Issues
         getIssues,
